@@ -1,0 +1,243 @@
+#+TITLE: Contracts
+* Abstract
+
+Does it sometimes feel like all computer systems are held together
+with duct tape and good intentions? Do you have confidence that the
+code you write, and the changes you make, are correct? What does
+“correct” even mean? How do we know the code we write today won’t
+become a long-term liability? These persistent questions can be enough
+to suck all the fun out of programming, but it doesn’t have to be that
+way.  In this talk, we’ll look at the connective tissue of good
+software, and show how to keep it strong and supple.  We’ll suggest
+replacing code reviews with something better and chart the path to a
+more hopeful future of software.
+
+* Intro
+
+- Contracts are required for:
+  - knowing when there is a bug
+  - knowing which code is buggy (whose fault)
+  - knowing what to test
+  - knowing what the author intended
+  - local reasoning.
+  - avoiding UB
+  - scalable software development/maintenance
+
+This is about elevating the meaningfulness of your code.
+
+Lu: start with example of sort, preconditions on ordering function, postconditions on result
+* Core idea: DbC
+
+- DbC separates concerns/responsibilities
+- Bertrand Meyer
+- Not about language features
+- There is a client and a callee (server).
+
+- A contract binds the client to pass a valid combination of
+  arguments, and binds the callee to correctly provide the result.
+
+- If preconditions don't hold, the client is at fault, and callee is
+  not required to make any promises.
+
+- If preconditions hold (no error reported) and postconditions not
+  fulfilled, the callee is at fault.
+
+- If you are an OO person you might think of contracts between
+  classes, but at the bottom level they are always between
+  functions/methods. For the sake of simplicity that's what we'll use
+  here.
+
+- Postcondition describes /relationship/ between initial state+arguments
+  and final state+return value.
+
+* Bugs
+- Precondition not fulfilled
+- Function returns with postcondition unfulfilled.
+- Classic DbC treats bugs as recoverable conditions; we do not.
+
+* Contracts include
+- public interfaces / function signatures
+- conventions
+- Documentation
+- Preconditions - UB always describes one
+
+- Names (avoid abbrevs) (of parameters as well)
+  - Express the most specific abstraction being represented.
+  - Yes, use a thesaurus!
+  - In particular, don’t repeat type info. Don't call an array "array."
+    Example: Position vs identity vs iterator
+
+- Postconditions
+- Class Invariants. Protect these using access control/encapsulation
+
+* Not all contracts can be tested
+Untestable precondition: comparison function is non-random, pointer is valid
+
+* Contracts are the connective tissue.
+** I don’t review code; I review contracts
+** Implementation comments indicate a missing refactor
+** Contracts should be in comments.
+Why?  It puts the two things that should correspond next to one
+another so you can see when the relationship between them is broken.
+Your tooling probably can help you jump to declarations.
+
+- Contracts are part of the interface
+- Assertions in the body are not enough.
+
+
+* Design
+
+** Weak invariants complicate contracts
+- generalize the idea that we pass references when we known things are non-NULL
+- pointers have a weak invariant
+- Example: show what happens if PairArray doesn't necessarily contain two arrays
+** Choosing preconditions:
+*** Impractical precondition: user input to parser is valid
+*** Impractical precondition: changes complexity of operation
+*** Weak preconditions complicate code, create untested paths
+*** Offensive programming: don't accept nonsense inputs
+- it's a poor engineering tradeoff to make code check for errors in its own usage.
+- Example: indexing out of bounds allowed
+- You're not doing the client any favors — it complicates postconditions/results
+- What your thing *is* becomes fuzzy
+- stack top/pop could have preconditions.  Should they?  depends on
+  how clients will use it.
+
+
+* Error Handling
+- An error is a postcondition failure
+** Throwing exception
+- Makes return value available/simple (no encoding failure)
+- Supports construction.  Note 2-phase construction weakens invariants.
+- Simplifies postcondition
+- Simplifies client logic when the immediate client can't do anything about it
+
+** Returning error
+- good when immediate client has a response
+
+
+* Debugging:
+** The only way to get control of a misbehaving system is to establish what the contracts are.
+If someone else has to do that, huge cost!
+** Add precondition checks
+- When you can and
+- it's affordable
+
+** Add invariant checks
+where? exit of ctors and mutating methods with access to the private parts
+
+* How to write good contracts
+- A lot of people are afraid of being overwhelmed by documentation.
+  - You can find all kinds of reasons on the web that documentation is
+    supposedly a waste of time.
+  - If you've been to any of my talks you know that I don't agree.
+  - Living with your own code for 3-5 years will change your mind about that.
+
+- Omit needless words
+  - Don't say "An abstraction that…", "A type representing," etc.
+  - Don't say anything that is evident from the declaration by itself! "Returns an int that…"
+  - Don't say "the specified;" use parameter names.
+  - Terseness is supported by having a central document for conventions.
+- Use a summary sentence fragment.
+  - Say what a non-mutating function returns
+  - Say what a void-returning mutating function does
+  - Other functions: choose based on the primary role.  Usually what
+    it does, and incidentally what it returns. An exception might be a cache function.
+  - Say what a type is.
+- To support local reasoning, the contract ≠ implementation
+- Hold your feet to the fire for meaningfulness
+  - ChatGPT documentation
+  - Beware copilot
+- Don't depend on an understanding of words in the name unless they're well defined:
+
+  This is OK in a vector type because negation is a well-defined computation:
+
+  #+begin_src c++
+    // Returns the negation of *this.
+  Vec2 negated() const {
+  #+end_src
+
+  But this is not:
+
+  #+begin_src c++
+  // Returns the value of *this after swizzling,
+  Vec2 swizzled() const {
+  #+end_src
+
+  consider "Actualize"
+
+* Don’t make other people write your contracts.  So inefficient
+
+* Responding to precondition violations
+** For reusable code, bottleneck your response
+- You might just want to terminate
+- You might want to take emergency shutdown measures
+- You might… want to throw an exception… but beware.
+- You might want to do something different in testing from what you do in shipping code.
+
+** Why your NULL checks are wrong
+- Also checking that pointer is in range.  It's not checkable: UB.
+
+** Possible policies
+- Never check. Cost to debuggability and security.
+- Check only to prevent undefined behavior.  Need example.  Better than matrix inverse.
+- Check always.
+
+Really in a project with more than a couple participants, these checks are super-valuable.
+
+** In C++ you really need contracts
+because you can’t check for everything. With all these unsafe parts, checking for bad things isn’t
+the road to correctness.  You need contracts.  This is good news because it cleans up your code.
+
+
+* What to do in existing code
+
+Think globally, act locally
+
+** Create an island of correctness
+** Write the thing that was supposed to be there and begin using it
+- Deprecate the old thing - it's going away; don't use it!
+- Attempt to remove it
+** How to write a contract for existing things.
+- state any preconditions that can be considered satisfied by all clients
+- promise only the postconditions that all clients depend on.
+
+
+** Dealing with Hyrum's law
+With a sufficient number of users of an API, it does not matter what
+you promise in the contract: all observable behaviours of your system
+will be depended on by somebody.
+-- Hyrum Wright
+
+- Not "contracts don't matter."
+- An observation about social programming dynamics as # clients grows.
+- “As a practical matter, if you change anything observable about a widely-used API, some client will break”
+- Effect of contract:
+  - discourage depending on things you might want to change
+  - as consequence, break fewer clients
+  - gives you grounds for indemnity!
+
+* Show composition of preconditions/postconditions.
+* Prove to yourself that the contract is upheld.
+* Outro
+** It's hard but it's worth it.
+** Feedback loop with design
+- Contract too complicated? Fix the API!
+- Contract's english description will tell you what to call the API.
+
+* Omit
+** Watch out for generics talking about properties of types and not their values
+Conformance means useful subset of values uphold semantic requirements
+** Commonly overlooked things in C++ that lead to UB.
+
+- Crash is a bug; defect w.r.t. the standard
+- Terminate often implies contract violation.
+- Testing for int overflow after operation, or this != NULL.
+
+** Hint: Distinguish between sanity checks (assertions) and precondition checks.
+** Mapping to math
+  - Domain is roughly the input type
+  - Range is actual resulting values
+  - Codomain is roughly the output type
+
+** Scaling up semantic preconditions is difficult: involves reachable values
