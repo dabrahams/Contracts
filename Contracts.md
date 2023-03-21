@@ -91,37 +91,39 @@ benefits, they will allow you to write many contracts in code.  That
 said, contracts are still fundamentally documentation, and some
 can't—or shouldn't only—be expressed as code.
 
+## Local Reasoning
+
+- Existing slide material.
+- This is what we do every day when we read or write code, to the
+  degree possible.
+
 ## (Class) Invariants
 
 The most important contribution of Design by Contract, over and above
 Hoare Logic, was to apply Hoare's idea of “invariants” to classes, or
 more generally, user-defined types with encapsulation.
 
-An “invariant” is just a thing that has to be true between some pair
-of steps in a program.  For example:
+An “invariant” is just a thing that has to be true at particular
+places in a program.  This is a really simple example, but you can
+probably see how the invariant might be useful for understanding the
+meaning of the next line.
 
 	x.sort()
 	
 	// invariant: x is sorted
 	
-	print(x)
+	let foundY = x.binary_search(y)
 
-A loop invariant is a condition that holds before and after each
-iteration:
+Hoare realized that *loops* have invariants that hold before and after
+each iteration, and showed how they could be used to prove the
+correctness of interesting algorithms.
 
-    i = 0
-	
-	
-	while i < a.length && a[i] < x { // invariant: a[0...i-1] < x
-		i += 1
-	}
+Even if you don't care about formal proofs, though, invariants turn
+out to be useful for casual reasoning about programs.  Meyer's *class
+invariants* are just invariants of types that hold at the boundary of
+their public APIs. Let me give you an example:
 
-This one says that all elements of `a` before the `i`th are less than `x`.
-By combining that information with the fact that `i` advances by 1 on
-each iteration, you can prove to yourself that after the loop, `i` is
-either equal to `a.length`, or `a[i]` is the first element ≥ x.
 
-Now, you probably do that kind of reasoning in your head.
 
 1. that the user should be able to define their own types and 
 2. that each instance of such a type has an encapsulation boundary, so
@@ -146,17 +148,7 @@ classes, or more generally, user-defined types with encapsulation.
 ## Chain together contracts… 
 ## then show that given a violated precondition you don't know the extent of the damage.
 
-It's a way of describing the
-rules that govern how the parts of your system interact.
-
-We're going to present Meyer's
-
-Then he incorporated support for
-it into his own
-
-
-refined came up with a discipline called Design by
-Contract, that 
+## Don't forget algorithmic complexity
 
 
 
@@ -199,3 +191,22 @@ If you want to be able to do any of these things, you need contracts.
 
 
 
+-------------------
+
+Hoare focused on *loop invariants*, which hold before and after each
+iteration of a loop:
+
+    i = 0
+	
+	// loop invariant: elements preceding element i are < x.
+	while i < a.length && a[i] < x { 
+		i += 1
+	}
+
+This one says all elements preceding element `i` are less than `x`.
+Now you probably don't need to, but if you wanted to prove that after the loop, `i` is
+either at the end, or element `i` is the first one that's not less
+than `x`… but unless you're doing formal verification, you probably
+don't need to work a case like this using loop invariants
+
+Now, you probably do that kind of reasoning in your head.
