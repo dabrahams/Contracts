@@ -8,13 +8,17 @@ and good intentions?
 This is the first in a series of Better Code seminars from the
 Software Technology Lab, which are aimed at elevating the quality of
 programming everywhere. We're rolling this episode out first because
-in many ways, it's the foundation for everything else.  
+in many ways, it's the foundation for everything else.
 
 Contracts are the connective tissue of solid software.  You really
 can't build software at scale without them.  If you *are* building
 large software systems, I promise you, you're using contracts, even if
 you don't use that word for them, and it will be well worth your time
 to take a deeper look at the ideas.
+
+Because we have practitioners here from many language backgrounds, I'm
+writing most of these examples in no particular language. Hopefully,
+they should be easily read as pseudocode, but if you have questions, please ask and I'll try to clear them up.  Also speaking of languages, I'm going to refer to English a lot, and please consider that a shorthand for “whatever human languages you use to communicate about software,” which is just too long to repeat.
 
 ## Correctness
 
@@ -30,6 +34,34 @@ it's futile to pursue correctness, but I disagree, for three reasons:
   
 - It's more practical than you might think.
 
+I want to be clear, though, when I talk about correctness, I don't
+mean some kind of elaborate formal proof. I mean achieving correctness
+through the sort of everyday thinking that we do every day while
+programming:
+
+    var names = [ "Sean", "Laura", "Dave", "Crusty" ]
+	
+	names.sort()
+	
+	for i in 0...3 { print(names[i]) }
+
+“I started with four names, and sorting rearranges items without
+changing the length, so I can still access all four items.”
+
+Not to overly aggrandize what we do every day, but that's just a
+little proof. So regular programming is on the same continuum as
+proving correctness and from time-to-time when you really need to get
+confidence that you understand some code, or that you've fixed a bug,
+it's OK to slide into a more formal mode. Not as an academic exercise, but because it's practical and useful. That doesn't make you an impostor; as a programmer you've earned the right.
+
+<!-- consider saving that last idea for the Outro. -->
+
+## Local Reasoning
+
+That kind of everyday thinking only works if we can reason locally...
+
+<!-- insert existing material here. -->
+
 ## What's a Contract?
 
 When I say “Contract” I mean something very specific.  In the mid
@@ -44,8 +76,8 @@ He describes the core idea this way (emphasis mine):
 > …a software system is viewed as a set of communicating
 > **components** whose **interaction** is based on precisely defined
 > **specifications** of the **mutual obligations** — contracts.
-
--- [Building bug-free O-O software: An Introduction to Design by
+>
+> —[Building bug-free O-O software: An Introduction to Design by
 Contract™](https://www.eiffel.com/values/design-by-contract/introduction/)
 
 So contracts describe the rules that govern how one piece of software
@@ -66,6 +98,13 @@ DbC.
 
 ## Real Talk: It's Documentation
 
+> …a software system is viewed as a set of communicating
+> components whose interaction is based on precisely defined
+> **specifications** of the mutual obligations — contracts.
+>
+> —[Building bug-free O-O software: An Introduction to Design by
+Contract™](https://www.eiffel.com/values/design-by-contract/introduction/)
+
 Looking back at Meyers' definition, you might notice he says contracts
 are “precisely defined specifications,” which is just a fancy word for
 documentation.
@@ -81,27 +120,40 @@ there are lots of counterproductive approaches to documentation, I'm
 going to show you one that is practical *and*—if you give the process
 the attention it deserves—can help you improve the code of your APIs.
 
-You may have heard that some languages have integrated features to
-support Design by Contract.  That idea started with Bertrand Meyer's
-Eiffel language, and includes D, Scala, Kotlin, and Clojure. Others,
-like Rust and Python, have libraries that provide a near-native
-contract programming experience. If you use one of these languages,
-fantastic; leverage those features and libraries.  Among other
-benefits, they will allow you to write many contracts in code.  That
-said, contracts are still fundamentally documentation, and some
-can't—or shouldn't only—be expressed as code.
+I also want to point out that documentation is essential for local
+reasoning.  It's the reason I don't need to be a condensed matter
+physicist to program a computer.
 
-## Local Reasoning
+<!-- insert existing material about documentation/local reasoning
+here. -->
 
-- Existing slide material.
-- This is what we do every day when we read or write code, to the
-  degree possible.
+## Language / Library Support
 
-## (Class) Invariants
+You may have heard that some languages have features to support Design by Contract.  In general, that means you can write *parts* of your contracts as code, and get some checking at runtime to make sure they're upheld:
+
+	class Array<T> {
+	
+	  /// Returns the `i`th element.
+	  @requires(i >= 0 && i < self.length) // <=== Here
+      fun getNth(i: Integer) -> T
+	  ...
+    }
+
+The idea started with Bertrand Meyer's own Eiffel language, and was
+picked up by many others, including D, Scala, Kotlin, and
+Clojure. Others languages, like Rust and Python, have contract
+libraries that provide a near-native contract programming experience.
+
+If you use one of these languages, fantastic; absolutely leverage
+those features and libraries.  That may reduce the amount of pure documentation you need to write. That said, contracts are still
+fundamentally documentation. There are some that really ought to be expressed in English (or your favorite).
+expressed as code.
+
+## Invariants
 
 The most important contribution of Design by Contract, over and above
 Hoare Logic, was to apply Hoare's idea of “invariants” to classes, or
-more generally, user-defined types with encapsulation.
+more generally, user-defined types with a public/private boundary.
 
 An “invariant” is just a thing that has to be true at particular
 places in a program.  This is a really simple example, but you can
@@ -109,104 +161,67 @@ probably see how the invariant might be useful for understanding the
 meaning of the next line.
 
 	x.sort()
-	
-	// invariant: x is sorted
-	
-	let foundY = x.binary_search(y)
+                                	// <= Invariant: x is sorted
+	let foundY = x.binary_search(y) // Therefore this is legal.
 
 Hoare realized that *loops* have invariants that hold before and after
 each iteration, and showed how they could be used to prove the
-correctness of interesting algorithms.
-
-Even if you don't care about formal proofs, though, invariants turn
-out to be useful for casual reasoning about programs.  Meyer's *class
-invariants* are just invariants of types that hold at the boundary of
-their public APIs. Let me give you an example:
-
-
-
-1. that the user should be able to define their own types and 
-2. that each instance of such a type has an encapsulation boundary, so
-   public APIs are available to any code operating on the instance,
-   but access to private APIs is limited to code that implements
-   the type.
-
-Almost any modern language you can think of supports user-defined
-types with encapsulation, and this combination also drove the most
-significant contribution of Design by Contract, over and above Hoare
-Logic.
-
-The most significant contribution of 
-The main contribution
-
-I want to start with the part of DbC that really *is* related to
-object-orientation, because that will give us context for the rest of
-the talk.  The most significant thing that Meyer contributed, on top
-of Hoare logic, was to extend Hoare's notion of invariants to cover
-classes, or more generally, user-defined types with encapsulation.
-
-## Chain together contracts… 
-## then show that given a violated precondition you don't know the extent of the damage.
-
-## Don't forget algorithmic complexity
-
-
-
-Some languages like Eiffel and D have features for contract
-checking, but the baseline requirement for this discipline that
-contracts need to be documented.
-
-In design by contract, a function's documentation covers at least three things:
-
-- preconditions (what's required from the caller)
-- postconditions (what's done and/or returned by the callee)
-- invariants (conditions that the function preserves)
-
-Having these three things allows clients to use it without diving into the function's implementation to see how it works.
-
-It's required for correct software bigger than a few files, and if you correct software at scale, even if you don't use these words, you're using this discipline.
-
-Invariants also extend to types
->> And every type has its own invariant, that's preserved by all operations on that type.
-My favorite example is this type that holds two vectors, and the invariant 
->> is that the vectors always have the same length.  Maybe it's a container that presents pairs of x and y as elements, where storing actual pairs could waste lots of memory due to alignment and padding.
-
-An invariant always has to hold for the program to be correct, with one exception: during a mutation.  If we want to add a new pair, we have to grow one of these vectors first, 
->> which breaks the invariant until we've done the other push_back.  
->> That's not a problem because the vectors are private and we encapsulate the invariant inside a mutating method, that appends a pair.  By the time that method returns, everything is back in order.
-
-But let's see what happens in our object graph:
-
-If you want to be able to do any of these things, you need contracts.
-
-
-
-
-
-
-
-
-
-
-
-
-
--------------------
-
-Hoare focused on *loop invariants*, which hold before and after each
-iteration of a loop:
+correctness of interesting algorithms.  This is just to give you a flavor.  Don't worry if you don't get it; it won't be on the test.
 
     i = 0
 	
-	// loop invariant: elements preceding element i are < x.
-	while i < a.length && a[i] < x { 
+	// Loop invariant: if J < i, a[J] != x
+	while (i < a.length && a[i] != x) { 
 		i += 1
 	}
+	
+	// a[i] is the first element == x, or 
+	//   no such element exists and i == a.length
+	
+This one says all elements preceding element `i` are not equal to `x`.
+Combining that loop invariant with the fact that `i` is incremented by 1 each iteration, lets you prove the loop either finds the first x, or leaves i equal to a.length.  For a simple loop like this, you probably don't need to do a proof, but if you're interested, it's a good exercise.
 
-This one says all elements preceding element `i` are less than `x`.
-Now you probably don't need to, but if you wanted to prove that after the loop, `i` is
-either at the end, or element `i` is the first one that's not less
-than `x`… but unless you're doing formal verification, you probably
-don't need to work a case like this using loop invariants
+## Class Invariants
 
-Now, you probably do that kind of reasoning in your head.
+A *class invariant* or *type invariant* is a condition that is
+established by the type's constructor and upheld by all of its
+publicly-accessible APIs.  This is just what we mean when we
+informally talk about the thing being “in a good state.”
+
+> in a good state ≅ invariant is upheld
+
+My favorite example is this type that holds a pair of private arrays,
+but its public interface is more like an array of pairs.
+
+<!-- picture -->
+
+You can probably write this type in any language; I've coded it in
+Swift, Python, TypeScript, and C++.
+
+<!-- show all four implementations -->
+
+There are four basic operations: create an empty instance, get the nth
+pair, get the length, and append a new pair.  The invariant for this
+type is that the private arrays always have the same length.
+
+If you're the type author, the invariant is basically a “contract with
+yourself.” The invariant, or parts of it, could also be publicly
+visible.  So if we made the private arrays publicly readable we could
+promise the user that their lengths will always match.
+
+
+
+# -------------------- Stuff to incorporate ------------------------
+## Chain together contracts… 
+then show that given a violated precondition you don't know the extent of the damage.
+
+## Don't forget algorithmic complexity
+## Deal with failing constructors/exceptions, null.
+## Encode program invariants in a type 
+(e.g. parent is an element in the database of people)
+## 
+
+## Arbitrary damage
+You own a supercar, a $7M Bugatti Divo, and you've got a contract with an ultra-exclusive "car butler" who takes care of all the maintenance, including refueling.  The contract, of course, says the butler is only going to use ultra-premium gas.  You also have a contract with the state that says you have to keep this thing's emissions within certain smog limits.  Well at some point the butler puts regular gas for a Prius in there, and of course this starts eating away at the valves and piston heads.  You never really push the car too hard, so you don't notice any difference in performance, but finally you have it taken for its smog checkup and it fails.  You've broken the precondition for the smog test, due to an earlier unnoticed bug (regular gas in supercar).  You take the car back to the dealer and they tell you the damage from regular gas is too extensive and now the car is valued at only $2M, practically worthless.
+
+## 
