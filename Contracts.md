@@ -17,8 +17,12 @@ you don't use that word for them, and it will be well worth your time
 to take a deeper look at the ideas.
 
 Because we have practitioners here from many language backgrounds, I'm
-writing most of these examples in no particular language. Hopefully,
-they should be easily read as pseudocode, but if you have questions, please ask and I'll try to clear them up.  Also speaking of languages, I'm going to refer to English a lot, and please consider that a shorthand for “whatever human languages you use to communicate about software,” which is just too long to repeat.
+writing most examples in no particular language. Hopefully, they
+should be easily read as pseudocode, but if you have questions, please
+ask and I'll try to clear them up.  Also speaking of languages, I'm
+going to refer to English a lot, and please consider that a shorthand
+for “whatever human languages you use to communicate about software,”
+which is just too long to repeat.
 
 ## Correctness
 
@@ -52,7 +56,8 @@ Not to overly aggrandize what we do every day, but that's just a
 little proof. So regular programming is on the same continuum as
 proving correctness and from time-to-time when you really need to get
 confidence that you understand some code, or that you've fixed a bug,
-it's OK to slide into a more formal mode. Not as an academic exercise, but because it's practical and useful. That doesn't make you an impostor; as a programmer you've earned the right.
+it's OK to slide into a more formal mode. Not as an academic exercise,
+but because it's practical and useful. 
 
 <!-- consider saving that last idea for the Outro. -->
 
@@ -65,8 +70,7 @@ That kind of everyday thinking only works if we can reason locally...
 ## What's a Contract?
 
 When I say “Contract” I mean something very specific.  In the mid
-1980s, Bertrand Meyer, who has to be the coolest cat in Object
-Oriented Programming, took Tony Hoare's work on formal verification of
+1980s, Bertrand Meyer took Tony Hoare's work on formal verification of
 programs, known as Hoare Logic, and shaped it into a practical
 discipline for software engineering, called “Design By Contract” or
 (DbC).
@@ -139,19 +143,33 @@ here. -->
 Lastly, I want to say, this documentation should go in your code,
 because:
 
-1. That puts the two things that should correspond—documentation and implementation—next to one another, so you can see when they don't match up. People sometimes complain that docs always go out of date, but that's kind of the point.
+1. That puts the two things that should correspond—documentation and
+   implementation—next to one another, so you can see when they don't
+   match up. People sometimes complain that docs go out of date, but
+   that's kinda the point: without the ability to see that
+   inconsistency, there's no way to know that there's a bug.
 
-2. That makes it reasonable to combine the activities of coding and documentation, which—believe it or not—are mutually supportive.
+2. That makes it reasonable to combine the activities of coding and
+   documentation, which—believe it or not—are mutually supportive.
 
-** Implementation comments indicate a missing refactor
+But if we're going to integrate documentation into our programming so
+tightly, we need to make sure it's neither intrusive for the
+maintainer to read nor burdensome for the author to write.  Ideally,
+it should help both of them, and I'll show you how to do just that.
+
+<!-- ** Implementation comments indicate a missing refactor -->
+
 ## Language / Library Support
 
-You may have heard that some languages have features to support Design by Contract.  In general, that means you can write *parts* of your contracts as code, and get some checking at runtime to make sure they're upheld:
+You may have heard that some languages have features to support Design
+by Contract.  In general, that means you can write *parts* of your
+contracts as code, and get some checking at runtime to make sure
+they're upheld:
 
 	class Array<T> {
 	
 	  /// Returns the `i`th element.
-	  @requires(i >= 0 && i < self.length) // <=== Here
+	  @requires(i >= 0 && i < self.length) // <=== CONTRACT
       fun getNth(i: Integer) -> T
 	  ...
     }
@@ -165,8 +183,64 @@ If you use one of these languages, fantastic; absolutely leverage
 those features and libraries.  That may reduce the amount of pure
 documentation you need to write. That said, contracts are still
 fundamentally documentation. There are some that really ought to be
-expressed in English, and some others that are impossible to express
-as code. Examples to follow.
+expressed in English, and some others that are actually impossible to
+express as code. Examples to follow.
+
+## Preconditions / postconditions
+
+- Directly from Hoare logic, but DbC added an ethos of blame.
+
+<!-- phrasing -->
+- There is a client and a callee (server).
+
+- A contract binds the client to pass a valid combination of arguments
+  (precondition), and binds the callee to correctly provide the result
+  (postconditions).
+
+- If preconditions don't hold, the client is at fault, and callee is
+  not required to make any promises.
+
+- If preconditions hold and postconditions not fulfilled, the callee
+  is at fault.  <!-- amend this later -->
+
+- Being able to say which code is at fault is extremely powerful!
+
+- Postcondition describes /relationship/ between initial state+arguments
+  and final state+return value.
+
+- Partial functions are a thing
+
+Your language acknowledges this (integer multiplication, array
+indexing); you should too.
+
+### Choosing preconditions:
+<!-- phrasing -->
+- Untestable precondition: comparison function is non-random, pointer is valid
+- Impractical precondition: user input to parser is valid
+- Impractical precondition: changes complexity of operation
+- Weak preconditions propagate nonsense, create untested paths
+
+## Offensive programming: don't accept nonsense inputs
+<!-- phrasing -->
+- it's a poor engineering tradeoff to make code check for errors in its own usage.
+- Example: indexing out of bounds allowed
+- You're not doing the client any favors — it complicates postconditions/results
+- What your thing *is* becomes fuzzy
+- There's room for judgement: stack top/pop could have preconditions.
+  Should they?  depends on how clients will use it.
+
+## Error Handling
+- An error is a postcondition failure.  Update the 
+** Throwing exception
+- Makes return value available/simple (no encoding failure)
+- Supports construction.  Note 2-phase construction weakens invariants.
+- Simplifies postcondition
+- Simplifies client logic when the immediate client can't do anything about it
+
+** Returning error
+- good when immediate client has a response
+
+
 
 ## Invariants
 
@@ -185,7 +259,8 @@ meaning of the next line.
 
 Hoare realized that *loops* have invariants that hold before and after
 each iteration, and showed how they could be used to prove the
-correctness of interesting algorithms.  This is just to give you a flavor.  Don't worry if you don't get it; it won't be on the test.
+correctness of interesting algorithms.  This is just to give you a
+flavor.  Don't worry if you don't get it; it won't be on the test.
 
     i = 0
 	
@@ -198,7 +273,11 @@ correctness of interesting algorithms.  This is just to give you a flavor.  Don'
 	//   no such element exists and i == a.length
 	
 This one says all elements preceding element `i` are not equal to `x`.
-Combining that loop invariant with the fact that `i` is incremented by 1 each iteration, lets you prove the loop either finds the first x, or leaves i equal to a.length.  For a simple loop like this, you probably don't need to do a proof, but if you're interested, it's a good exercise.
+Combining that loop invariant with the fact that `i` is incremented by
+1 each iteration, lets you prove the loop either finds the first x, or
+leaves i equal to a.length.  For a simple loop like this, you probably
+don't need to do a proof, but if you're interested, it's a good
+exercise.
 
 ## Class Invariants
 
@@ -206,9 +285,6 @@ A *class invariant* or *type invariant* is a condition that is
 established by the type's constructor and upheld by all of its
 publicly-accessible APIs.  This is just what we mean when we
 informally talk about the thing being “in a good state.”
-
-<!-- the purpose of public/private is to uphold invariants -->
-<!-- no mutation, no need to think about it. -->
 
 > in a good state ≅ invariant is upheld
 
@@ -253,72 +329,75 @@ struct PairArray<First, Second> {
 }
 ```
 
+vs.
 
+```swift
+/// A random-access collection of `(First, Second)` pairs that can
+/// also be viewed as having two independent arrays `[First]`,
+/// `[Second]`.
+///
+/// The collection of pairs is as long as the shorter of those two
+/// independent arrays, with the element at index i being `(first[i],
+/// second[i])`.
+struct PairArray<First, Second> {
+  /// The first part of each element, plus any excess `First`
+  /// parts.
+  public var first: [First] = []
+
+  /// The first part of each element, plus any excess `Second`
+  /// parts.
+  public var second: [Second] = []
+
+  /// An empty instance.
+  public init() {}
+
+  /// The `i`th element of the collection of pairs.
+  public subscript(i: Int) -> (First, Second)
+
+  /// The length of the collection of pairs.
+  public var count: Int
+
+  /// Adds `x.0` to `first` and `x.1` to `second`.
+  ///
+  /// What this does to 
+  public mutating func append(_ x: (First, Second))
+}
+```
+
+<!-- ordering -->
 If you're the type author, the invariant is basically a “contract with
 yourself.” The invariant, or parts of it, could also be publicly
 visible.  So if we made the private arrays publicly readable we could
 promise the user that their lengths will always match.
 
-## Outro
-** It's hard but it's worth it.
-** Feedback loop with design
-- Contract too complicated? Fix the API!
-- Contract's english description will tell you what to call the API.
-** Don’t make other people write your contracts.  So inefficient
 
-
-# -------------------- Stuff to incorporate ------------------------
-## Encode program invariants in a type 
+<!-- the purpose of public/private is to uphold invariants -->
+So Encode program invariants in a type 
 (e.g. parent is an element in the database of people)
-## Preconditions / postconditions
-- There is a client and a callee (server).
-
-- A contract binds the client to pass a valid combination of
-  arguments, and binds the callee to correctly provide the result.
-
-- If preconditions don't hold, the client is at fault, and callee is
-  not required to make any promises.
-
-- If preconditions hold (no error reported) and postconditions not
-  fulfilled, the callee is at fault.
-
-- Postcondition describes /relationship/ between initial state+arguments
-  and final state+return value.
-
-** Choosing preconditions:
-- Untestable precondition: comparison function is non-random, pointer is valid
-*** Impractical precondition: user input to parser is valid
-*** Impractical precondition: changes complexity of operation
-*** Weak preconditions complicate code, create untested paths
-*** Offensive programming: don't accept nonsense inputs
-- it's a poor engineering tradeoff to make code check for errors in its own usage.
-- Example: indexing out of bounds allowed
-- You're not doing the client any favors — it complicates postconditions/results
-- What your thing *is* becomes fuzzy
-- stack top/pop could have preconditions.  Should they?  depends on
-  how clients will use it.
-
+<!-- no mutation, no need to think about it. -->
 
 
 ## Other elements of contracts
-- Don't forget algorithmic complexity
+<!-- phrasing -->
+- Function Signatures
+- Cost in time / memory.
   Exact operation counts can be more useful than Big O complexity.
-
-- function signatures
 - Conventions (document these!)
-
-- Names 
-  - Think about how the API plays out at the use-site.  Things are
-    declared once but used many times.
+- Names
   - Name means something; should reflect the postcondition.  Respect
     the name, or change it.
   - sort with a random comparison is not a shuffle.  At worst, isolate it as a hack in a well-named operation.
+
+## How to write good contracts
+<!-- phrasing -->
+- Names 
+  - Think about how the API plays out at the use-site.  Things are
+    declared once but used many times.
   - In particular, don’t repeat type info. Don't call an array "array."
   - Express the most specific abstraction being represented.
   - Yes, use a thesaurus!
     Example: Position vs identity vs iterator
 
-## How to write good contracts
 - A lot of people are afraid of being overwhelmed by documentation.
   - You can find all kinds of reasons on the web that documentation is
     supposedly a waste of time.
@@ -330,6 +409,11 @@ promise the user that their lengths will always match.
   - Don't say anything that is evident from the declaration by itself! "Returns an int that…"
   - Don't say "the specified;" use parameter names.
   - Terseness is supported by having a central document for conventions.
+  - Don't talk about self.
+  - Constructors can be documented *as* the created instance.
+  - Subscripts are a generalization of parameters and can be
+    documented *as* the acccessed property.
+
 - Use a summary sentence fragment.
   - Say what a non-mutating function returns
   - Say what a void-returning mutating function does
@@ -358,11 +442,24 @@ promise the user that their lengths will always match.
 
   consider "Actualize"
 
+## Outro
 
+<!-- phrasing -->
+* It's hard but it's worth it.
 
-### Partial functions are a thing
-Your language acknowledges this (integer multiplication, array
-indexing); you should too.
+  Don’t make other people write your contracts.  So inefficient
+
+* Magic Feedback loop with design
+  - Contract too complicated? Fix the API!
+  - Contract's english description will tell you what to call the API.
+
+* If you've secretly been fooling around with Hoare logic but were
+  embarrassed to tell anyone—maybe you have a little impostor
+  syndrome—it's OKAY; as a programmer you've earned the
+  right.
+
+# -------------------- Stuff to incorporate ------------------------
+
 
 ## Deal with failing constructors/exceptions, null.
 ## 
@@ -385,6 +482,8 @@ precondition for the smog test, due to an earlier unnoticed bug
 they tell you the damage from regular gas is too extensive and now the
 car is valued at only $2M, practically worthless.
 
+- best effort butler drives the car home anyway and tells you you're all set.  Then you destroy the car.
+
 <!-- Deal with resource exhaustion as recoverable in the following -->
 
 Laura: I wonder if the "reasonable fallback" behavior can illustrate damage here, too -- like, the gas station within a 30-mile drive of the mansion didn't have ultra premium, so the butler picked the highest value available
@@ -406,17 +505,6 @@ If someone else has to do that, huge cost!
 
 ** Add invariant checks
 where? exit of ctors and mutating methods with access to the private parts
-
-## Error Handling
-- An error is a postcondition failure
-** Throwing exception
-- Makes return value available/simple (no encoding failure)
-- Supports construction.  Note 2-phase construction weakens invariants.
-- Simplifies postcondition
-- Simplifies client logic when the immediate client can't do anything about it
-
-** Returning error
-- good when immediate client has a response
 
 ## Misc
 
