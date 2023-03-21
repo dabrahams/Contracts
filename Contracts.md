@@ -16,6 +16,20 @@ large software systems, I promise you, you're using contracts, even if
 you don't use that word for them, and it will be well worth your time
 to take a deeper look at the ideas.
 
+## Correctness
+
+Fundamentally, contracts are about correctness.  Some people think
+it's futile to pursue correctness, but I disagree, for three reasons:
+
+- Simplicity.  The discipline we're talking about actually removes
+  loads of needless complexity and uncertainty from the process of
+  coding.
+  
+- joy / possibility.  It's just way more rewarding when you know what
+  it means to do your job right.
+  
+- It's more practical than you might think.
+
 ## What's a Contract?
 
 When I say “Contract” I mean something very specific.  In the mid
@@ -44,44 +58,93 @@ be pointing them out as they come up.
 If you go back and look at Meyers' writings, you'll see he mentions
 object-oriented programming all the time (this was the 80's after
 all), and his idea of a “component” is a class instance, but his
-system generalizes perfectly well to any programming paradigm. That's
-a strong indication that he was onto something deep and fundamental.
+system generalizes perfectly well to any modern programming
+paradigm, because M. Meyer was onto something deep and fundamental.
 
-So I'm going to present what we think of as a modern generalization
-of DbC.
+So I'm going to present what we think of as a modern generalization of
+DbC.
 
 ## Real Talk: It's Documentation
 
-Looking back at Meyers' description, you might notice the words
-“precisely defined specification,” which means contracts are
+Looking back at Meyers' definition, you might notice he says contracts
+are “precisely defined specifications,” which is just a fancy word for
 documentation.
 
-If you're like a lot of programmers I know, your eyes are rolling back
-in your head. You can find all kinds of reasons on the web that
-documentation is supposedly a waste of time, but if you've been to any
-of my talks you know that I don't agree. The only people who really
-believe that are working alone on throw-away code.  Living with your
-own code for a little while can cure you of this ailment.
+Now, lots of people think documentation is a waste of time, but if
+you've been to any of my talks you know that I don't agree with that
+either. First of all, correctness is always with respect to a
+specification, so undocumented software is neither correct nor
+incorrect.
 
-Some languages, starting with Bertrand Meyer's Eiffel, and including
-D, Scala, Kotlin, and Clojure, have integrated features to support
-Design by Contract, and others, like Rust and Python, have libraries
-that provide a near-native experience. If you use one of these
-languages, that's fantastic; leverage those features and libraries.
-Among other benefits, it will allow you to write many contracts as
-code.  That said, contracts are still fundamentally documentation, and
-some can't—or shouldn't only—be expressed as code.
+So yes, this is a talk about documentation. While it is true that
+there are lots of counterproductive approaches to documentation, I'm
+going to show you one that is practical *and*—if you give the process
+the attention it deserves—can help you improve the code of your APIs.
 
-So yes, this is a talk about documentation.
+You may have heard that some languages have integrated features to
+support Design by Contract.  That idea started with Bertrand Meyer's
+Eiffel language, and includes D, Scala, Kotlin, and Clojure. Others,
+like Rust and Python, have libraries that provide a near-native
+contract programming experience. If you use one of these languages,
+fantastic; leverage those features and libraries.  Among other
+benefits, they will allow you to write many contracts in code.  That
+said, contracts are still fundamentally documentation, and some
+can't—or shouldn't only—be expressed as code.
 
-## Correctness
+## (Class) Invariants
 
+The most important contribution of Design by Contract, over and above
+Hoare Logic, was to apply Hoare's idea of “invariants” to classes, or
+more generally, user-defined types with encapsulation.
 
-Besides
-which, I'm going to show you how to make it livable.
+An “invariant” is just a thing that has to be true between some pair
+of steps in a program.  For example:
 
-## Chain together contracts… then show that given a violated
-## precondition you don't know the extent of the damage.
+	x.sort()
+	
+	// invariant: x is sorted
+	
+	print(x)
+
+A loop invariant is a condition that holds before and after each
+iteration:
+
+    i = 0
+	
+	
+	while i < a.length && a[i] < x { // invariant: a[0...i-1] < x
+		i += 1
+	}
+
+This one says that all elements of `a` before the `i`th are less than `x`.
+By combining that information with the fact that `i` advances by 1 on
+each iteration, you can prove to yourself that after the loop, `i` is
+either equal to `a.length`, or `a[i]` is the first element ≥ x.
+
+Now, you probably do that kind of reasoning in your head.
+
+1. that the user should be able to define their own types and 
+2. that each instance of such a type has an encapsulation boundary, so
+   public APIs are available to any code operating on the instance,
+   but access to private APIs is limited to code that implements
+   the type.
+
+Almost any modern language you can think of supports user-defined
+types with encapsulation, and this combination also drove the most
+significant contribution of Design by Contract, over and above Hoare
+Logic.
+
+The most significant contribution of 
+The main contribution
+
+I want to start with the part of DbC that really *is* related to
+object-orientation, because that will give us context for the rest of
+the talk.  The most significant thing that Meyer contributed, on top
+of Hoare logic, was to extend Hoare's notion of invariants to cover
+classes, or more generally, user-defined types with encapsulation.
+
+## Chain together contracts… 
+## then show that given a violated precondition you don't know the extent of the damage.
 
 It's a way of describing the
 rules that govern how the parts of your system interact.
