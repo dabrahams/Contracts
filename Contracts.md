@@ -36,7 +36,7 @@ it's futile to pursue correctness, but I disagree, for three reasons:
 
 I want to be clear, though, when I talk about correctness, I don't
 mean some kind of elaborate formal proof. I mean achieving correctness
-through the sort of everyday thinking that we do every day while
+through the sort of everyday thinking that we do while
 programming:
 
     var names = [ "Sean", "Laura", "Dave", "Crusty" ]
@@ -111,14 +111,21 @@ documentation.
 
 Now, lots of people think documentation is a waste of time, but if
 you've been to any of my talks you know that I don't agree with that
-either. First of all, correctness is always with respect to a
-specification, so undocumented software is neither correct nor
-incorrect.
+either. First of all, it's a prerequisite for correctness.
+Correctness is always with respect to a specification, so undocumented
+software is neither correct nor incorrect.  
+
+In fact, I don't review code; I review contracts.  If you ask me for a
+code review and there's anything without a contract, I'm going to send
+it back, because there's no way to make a judgement about its
+correctness.
 
 So yes, this is a talk about documentation. While it is true that
 there are lots of counterproductive approaches to documentation, I'm
 going to show you one that is practical *and*—if you give the process
 the attention it deserves—can help you improve the code of your APIs.
+
+### Documentation and local reasoning
 
 I also want to point out that documentation is essential for local
 reasoning.  It's the reason I don't need to be a condensed matter
@@ -127,6 +134,16 @@ physicist to program a computer.
 <!-- insert existing material about documentation/local reasoning
 here. -->
 
+### Put it in comments
+
+Lastly, I want to say, this documentation should go in your code,
+because:
+
+1. That puts the two things that should correspond—documentation and implementation—next to one another, so you can see when they don't match up. People sometimes complain that docs always go out of date, but that's kind of the point.
+
+2. That makes it reasonable to combine the activities of coding and documentation, which—believe it or not—are mutually supportive.
+
+** Implementation comments indicate a missing refactor
 ## Language / Library Support
 
 You may have heard that some languages have features to support Design by Contract.  In general, that means you can write *parts* of your contracts as code, and get some checking at runtime to make sure they're upheld:
@@ -145,9 +162,11 @@ Clojure. Others languages, like Rust and Python, have contract
 libraries that provide a near-native contract programming experience.
 
 If you use one of these languages, fantastic; absolutely leverage
-those features and libraries.  That may reduce the amount of pure documentation you need to write. That said, contracts are still
-fundamentally documentation. There are some that really ought to be expressed in English (or your favorite).
-expressed as code.
+those features and libraries.  That may reduce the amount of pure
+documentation you need to write. That said, contracts are still
+fundamentally documentation. There are some that really ought to be
+expressed in English, and some others that are impossible to express
+as code. Examples to follow.
 
 ## Invariants
 
@@ -188,6 +207,9 @@ established by the type's constructor and upheld by all of its
 publicly-accessible APIs.  This is just what we mean when we
 informally talk about the thing being “in a good state.”
 
+<!-- the purpose of public/private is to uphold invariants -->
+<!-- no mutation, no need to think about it. -->
+
 > in a good state ≅ invariant is upheld
 
 My favorite example is this type that holds a pair of private arrays,
@@ -204,27 +226,240 @@ There are four basic operations: create an empty instance, get the nth
 pair, get the length, and append a new pair.  The invariant for this
 type is that the private arrays always have the same length.
 
-To show why this is important, let's look at what happens if we weaken
-the invariant by publicly exposing write access to the arrays.
+To show why this invariant is important, let's look at what happens if
+we weaken it by publicly exposing write access to the arrays. Now a
+client can change the length of the two arrays independently.
+
+```swift
+/// A random-access collection of `(First, Second)` pairs.
+struct PairArray<First, Second> {
+  /// The first part of each element.
+  private var first: [First] = []
+
+  /// The second part of each element.
+  private var second: [Second] = []
+
+  /// An empty instance.
+  public init() {}
+
+  /// The `i`th element.
+  public subscript(i: Int) -> (First, Second)
+
+  /// The length.
+  public var count: Int
+
+  /// Adds x to the end.
+  public mutating func append(_ x: (First, Second))
+}
+```
+
 
 If you're the type author, the invariant is basically a “contract with
 yourself.” The invariant, or parts of it, could also be publicly
 visible.  So if we made the private arrays publicly readable we could
 promise the user that their lengths will always match.
 
-# -------------------- Stuff to incorporate ------------------------
-## Chain together contracts… 
-then show that given a violated precondition you don't know the extent of the damage.
+## Outro
+** It's hard but it's worth it.
+** Feedback loop with design
+- Contract too complicated? Fix the API!
+- Contract's english description will tell you what to call the API.
+** Don’t make other people write your contracts.  So inefficient
 
-## Don't forget algorithmic complexity
-## Deal with failing constructors/exceptions, null.
+
+# -------------------- Stuff to incorporate ------------------------
 ## Encode program invariants in a type 
 (e.g. parent is an element in the database of people)
+## Preconditions / postconditions
+- There is a client and a callee (server).
+
+- A contract binds the client to pass a valid combination of
+  arguments, and binds the callee to correctly provide the result.
+
+- If preconditions don't hold, the client is at fault, and callee is
+  not required to make any promises.
+
+- If preconditions hold (no error reported) and postconditions not
+  fulfilled, the callee is at fault.
+
+- Postcondition describes /relationship/ between initial state+arguments
+  and final state+return value.
+
+** Choosing preconditions:
+- Untestable precondition: comparison function is non-random, pointer is valid
+*** Impractical precondition: user input to parser is valid
+*** Impractical precondition: changes complexity of operation
+*** Weak preconditions complicate code, create untested paths
+*** Offensive programming: don't accept nonsense inputs
+- it's a poor engineering tradeoff to make code check for errors in its own usage.
+- Example: indexing out of bounds allowed
+- You're not doing the client any favors — it complicates postconditions/results
+- What your thing *is* becomes fuzzy
+- stack top/pop could have preconditions.  Should they?  depends on
+  how clients will use it.
+
+
+
+## Other elements of contracts
+- Don't forget algorithmic complexity
+  Exact operation counts can be more useful than Big O complexity.
+
+- function signatures
+- Conventions (document these!)
+
+- Names 
+  - Think about how the API plays out at the use-site.  Things are
+    declared once but used many times.
+  - Name means something; should reflect the postcondition.  Respect
+    the name, or change it.
+  - sort with a random comparison is not a shuffle.  At worst, isolate it as a hack in a well-named operation.
+  - In particular, don’t repeat type info. Don't call an array "array."
+  - Express the most specific abstraction being represented.
+  - Yes, use a thesaurus!
+    Example: Position vs identity vs iterator
+
+## How to write good contracts
+- A lot of people are afraid of being overwhelmed by documentation.
+  - You can find all kinds of reasons on the web that documentation is
+    supposedly a waste of time.
+  - If you've been to any of my talks you know that I don't agree.
+  - Living with your own code for 3-5 years will change your mind about that.
+
+- Omit needless words
+  - Don't say "An abstraction that…", "A type representing," etc.
+  - Don't say anything that is evident from the declaration by itself! "Returns an int that…"
+  - Don't say "the specified;" use parameter names.
+  - Terseness is supported by having a central document for conventions.
+- Use a summary sentence fragment.
+  - Say what a non-mutating function returns
+  - Say what a void-returning mutating function does
+  - Other functions: choose based on the primary role.  Usually what
+    it does, and incidentally what it returns. An exception might be a cache function.
+  - Say what a type is.
+- To support local reasoning, the contract ≠ implementation
+- Hold your feet to the fire for meaningfulness
+  - ChatGPT documentation
+  - Beware copilot
+- Don't depend on an understanding of words in the name unless they're well defined:
+
+  This is OK in a vector type because negation is a well-defined computation:
+
+  #+begin_src c++
+    // Returns the negation of *this.
+  Vec2 negated() const {
+  #+end_src
+
+  But this is not:
+
+  #+begin_src c++
+  // Returns the value of *this after swizzling,
+  Vec2 swizzled() const {
+  #+end_src
+
+  consider "Actualize"
+
+
+
+### Partial functions are a thing
+Your language acknowledges this (integer multiplication, array
+indexing); you should too.
+
+## Deal with failing constructors/exceptions, null.
 ## 
 
 ## Arbitrary damage
-You own a supercar, a $7M Bugatti Divo, and you've got a contract with an ultra-exclusive "car butler" who takes care of all the maintenance, including refueling.  The contract, of course, says the butler is only going to use ultra-premium gas.  You also have a contract with the state that says you have to keep this thing's emissions within certain smog limits.  Well at some point the butler puts regular gas for a Prius in there, and of course this starts eating away at the valves and piston heads.  You never really push the car too hard, so you don't notice any difference in performance, but finally you have it taken for its smog checkup and it fails.  You've broken the precondition for the smog test, due to an earlier unnoticed bug (regular gas in supercar).  You take the car back to the dealer and they tell you the damage from regular gas is too extensive and now the car is valued at only $2M, practically worthless.
+You're an idle billionaire.  You own a supercar, a $7M Bugatti Divo.  
+and you've got a contract with an ultra-exclusive "car butler" who
+takes care of all the maintenance, including refueling. Now one day you
+
+The contract, of course, says the butler is only
+going to use ultra-premium gas.  You also have a contract with the
+state that says you have to keep this thing's emissions within certain
+smog limits.  Well at some point the butler puts regular gas for a
+Prius in there, and of course this starts eating away at the valves
+and piston heads.  You never really push the car too hard, so you
+don't notice any difference in performance, but finally you have it
+taken for its smog checkup and it fails.  You've broken the
+precondition for the smog test, due to an earlier unnoticed bug
+(regular gas in supercar).  You take the car back to the dealer and
+they tell you the damage from regular gas is too extensive and now the
+car is valued at only $2M, practically worthless.
+
+<!-- Deal with resource exhaustion as recoverable in the following -->
+
+Laura: I wonder if the "reasonable fallback" behavior can illustrate damage here, too -- like, the gas station within a 30-mile drive of the mansion didn't have ultra premium, so the butler picked the highest value available
+2:27
+and the way to mitigate damage (like, the embarrassment of showing up at the fancy car party with no gas) is to report the failure at the point of failure AND stop
+2:28
+like, clearly the butler shouldn't just walk off into the desert leaving the keys in the car if the right gas isn't available
 
 ## Assertions can be ignored when reasoning about program semantics
 As long as they don't have side-effects and they stop the program.
 They don't induce control flow.
+
+## Debugging:
+** The only way to get control of a misbehaving system is to establish what the contracts are.
+If someone else has to do that, huge cost!
+** Add precondition checks
+- When you can and
+- it's affordable
+
+** Add invariant checks
+where? exit of ctors and mutating methods with access to the private parts
+
+## Error Handling
+- An error is a postcondition failure
+** Throwing exception
+- Makes return value available/simple (no encoding failure)
+- Supports construction.  Note 2-phase construction weakens invariants.
+- Simplifies postcondition
+- Simplifies client logic when the immediate client can't do anything about it
+
+** Returning error
+- good when immediate client has a response
+
+## Misc
+
+** Contracts are part of the interface
+** Assertions in the body are not enough.
+
+* Responding to precondition violations
+Really in a project with more than a couple participants, these checks are super-valuable.
+** For reusable code, bottleneck your response
+- You might just want to terminate
+- You might want to take emergency shutdown measures
+- You might… want to throw an exception… but beware.
+- You might want to do something different in testing from what you do in shipping code.
+
+** UB
+this ==  NULL doesn't work.
+Checking that pointer is in range doesn't work.
+Checking that your signed ints didn't overflow doesn't work.
+
+* What to do in existing code
+
+Think globally, act locally
+
+** Create an island of correctness
+** Write the thing that was supposed to be there and begin using it
+- Deprecate the old thing - it's going away; don't use it!
+- Attempt to remove it
+** How to write a contract for existing things.
+- state any preconditions that can be considered satisfied by all clients
+- promise only the postconditions that all clients depend on.
+
+
+** Dealing with Hyrum's law
+With a sufficient number of users of an API, it does not matter what
+you promise in the contract: all observable behaviours of your system
+will be depended on by somebody.
+-- Hyrum Wright
+
+- Not "contracts don't matter."
+- An observation about social programming dynamics as # clients grows.
+- “As a practical matter, if you change anything observable about a widely-used API, some client will break”
+- Effect of contract:
+  - discourage depending on things you might want to change
+  - as consequence, break fewer clients
+  - gives you grounds for indemnity!
+
