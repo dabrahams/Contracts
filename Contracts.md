@@ -204,12 +204,13 @@ There are four basic operations: create an empty instance, get the nth
 pair, get the length, and append a new pair.  The invariant for this
 type is that the private arrays always have the same length.
 
+To show why this is important, let's look at what happens if we weaken
+the invariant by publicly exposing write access to the arrays.
+
 If you're the type author, the invariant is basically a “contract with
 yourself.” The invariant, or parts of it, could also be publicly
 visible.  So if we made the private arrays publicly readable we could
 promise the user that their lengths will always match.
-
-
 
 # -------------------- Stuff to incorporate ------------------------
 ## Chain together contracts… 
@@ -224,4 +225,6 @@ then show that given a violated precondition you don't know the extent of the da
 ## Arbitrary damage
 You own a supercar, a $7M Bugatti Divo, and you've got a contract with an ultra-exclusive "car butler" who takes care of all the maintenance, including refueling.  The contract, of course, says the butler is only going to use ultra-premium gas.  You also have a contract with the state that says you have to keep this thing's emissions within certain smog limits.  Well at some point the butler puts regular gas for a Prius in there, and of course this starts eating away at the valves and piston heads.  You never really push the car too hard, so you don't notice any difference in performance, but finally you have it taken for its smog checkup and it fails.  You've broken the precondition for the smog test, due to an earlier unnoticed bug (regular gas in supercar).  You take the car back to the dealer and they tell you the damage from regular gas is too extensive and now the car is valued at only $2M, practically worthless.
 
-## 
+## Assertions can be ignored when reasoning about program semantics
+As long as they don't have side-effects and they stop the program.
+They don't induce control flow.
