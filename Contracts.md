@@ -14,7 +14,7 @@ Contracts are the connective tissue of solid software.  You really
 can't build software at scale without them.  If you *are* building
 large software systems, I promise you, you're using contracts, even if
 you don't use that word for them, and it will be well worth your time
-to take a deeper look at the ideas.
+to take a deeper look at these ideas.
 
 Because we have practitioners here from many language backgrounds, I'm
 writing most examples in no particular language. Hopefully, they
@@ -29,21 +29,21 @@ which is just too long to repeat.
 Fundamentally, contracts are about correctness.  Some people think
 it's futile to pursue correctness, but I disagree, for three reasons:
 
-- Simplicity.  The discipline we're talking about actually removes
-  loads of needless complexity and uncertainty from the process of
-  coding.
-  
-- joy / possibility.  It's just way more rewarding when you know what
-  it means to do your job right.
-  
 - It's more practical than you might think.
 
-### Additionally: Strong Contracts Simplify Code
+- Simplicity: One of the reasons it's practical.  The discipline we're
+  talking about actually removes loads of needless complexity and
+  uncertainty from your code and from the process of coding.
+  
+- joy / possibility.  It's just way more rewarding when you know what
+  it means to do your job right. <!-- rephrase -->
+  
+
+> **Note: Strong Contracts Simplify Code**
 
 I want to be clear, though, when I talk about correctness, I don't
 mean some kind of elaborate formal proof. I mean achieving correctness
-through the sort of everyday thinking that we do while
-programming:
+through the sort of everyday thinking that we do while programming:
 
     var names = [ "Sean", "Laura", "Dave", "Crusty" ]
 	
@@ -51,21 +51,50 @@ programming:
 	
 	for i in 0...3 { print(names[i]) }
 
-“I started with four names, and sorting rearranges items without
-changing the length, so I can still access all four items.”
+How do I know that last line is OK?  “I started with four names, and
+sorting rearranges items without changing the length, so I can still
+access all four items.”
 
 Not to overly aggrandize what we do every day, but that's just a
-little proof. So regular programming is on the same continuum as
-proving correctness and from time-to-time when you really need to get
-confidence that you understand some code, or that you've fixed a bug,
-it's OK to slide into a more formal mode. Not as an academic exercise,
-but because it's practical and useful. 
+informal proof. So regular programming is on the same continuum as
+formally proving correctness and from time-to-time when you really
+need to get confidence that you understand some code, or that you've
+fixed a bug, it's OK to slide into a more formal mode. Not as an
+academic exercise, but because it's practical and useful.
 
 ## Local Reasoning
 
-That kind of everyday thinking only works if we can reason locally...
+That kind of everyday thinking only works if we can reason locally
 
-<!-- insert existing material here. -->
+> Local reasoning is the idea that the reader can make sense of the
+> code directly in front of them, without going on a journey
+> discovering how the code works.
+> 
+> —Nathan Gitter
+> (https://medium.com/@nathangitter/local-reasoning-in-swift-6782e459d)
+
+My brain has limited capacity. And I've found a lot of other peoples'
+brains are limited too. Not yours of course, but a lot of peoples'
+are. People like us can't keep the whole program in our heads. Of
+course local reasoning goes beyond programming; it's how humans deal
+with complexity: we break complicated problems into parts that we can
+think about in isolation so that we can reason about the whole.
+
+In fact, local reasoning is so fundamental that most of our
+programming best practices are there just to enable it.  It's why we
+make data members private, why we break programs into components like
+functions, types, and modules, and we try to keep them small.
+
+> Best practices that exist to support local reasoning
+> 
+> - Using private data members
+> - Keeping functions small
+> - Creating components
+> - Avoiding global variables
+> - Avoiding pointers
+> - Building/using libraries
+> - Following the single-responsibility principle
+> - Documentation (spoiler alert)
 
 ## What's a Contract?
 
@@ -73,7 +102,7 @@ When I say “Contract” I mean something very specific.  In the mid
 1980s, Bertrand Meyer took Tony Hoare's work on formal verification of
 programs, known as Hoare Logic, and shaped it into a practical
 discipline for software engineering, called “Design By Contract” or
-(DbC).
+DbC.
 
 He describes the core idea this way (emphasis mine):
 
@@ -85,11 +114,9 @@ He describes the core idea this way (emphasis mine):
 Contract™](https://www.eiffel.com/values/design-by-contract/introduction/)
 
 So contracts describe the rules that govern how one piece of software
-talks to another. In other words, they're relationships.  Now I know
-as engineers, a lot of us aren't exactly great at relationships, but
-hopefully this series will make us all a little better. Thinking in
+talks to another. In other words, they're relationships.  Thinking in
 terms of relationships is one of the themes of Better Code, and we'll
-be pointing them out as they come up.
+be pointing relationships out as they come up.
 
 If you go back and look at Meyers' writings, you'll see he mentions
 object-oriented programming all the time (this was the 80's after
@@ -100,7 +127,7 @@ paradigm, because M. Meyer was onto something deep and fundamental.
 So I'm going to present what we think of as a modern generalization of
 DbC.
 
-### Real Talk: It's Documentation
+### Spoiler Alert: It's Documentation
 
 > …a software system is viewed as a set of communicating
 > components whose interaction is based on precisely defined
@@ -114,10 +141,10 @@ are “precisely defined specifications,” which is just a fancy word for
 documentation.
 
 Now, lots of people think documentation is a waste of time, but if
-you've been to any of my talks you know that I don't agree with that
-either. First of all, it's a prerequisite for correctness.
-Correctness is always with respect to a specification, so undocumented
-software is neither correct nor incorrect.  
+you've been to any of my talks you know that I don't agree. First of
+all, it's a prerequisite for correctness.  Correctness is always with
+respect to a specification, so undocumented software is neither
+correct nor incorrect.
 
 In fact, I don't review code; I review contracts.  If you ask me for a
 code review and there's anything without a contract, I'm going to send
@@ -135,8 +162,23 @@ I also want to point out that documentation is essential for local
 reasoning.  It's the reason I don't need to be a condensed matter
 physicist to program a computer.
 
-<!-- insert existing material about documentation/local reasoning
-here. -->
+Here's what I mean. As programmers, we're working on what my friend
+Sam Lazarus calls “a tower of abstraction” that stretches through the
+libraries and programming language we use, the operating system, and
+into the hardware, which ultimately rests on the laws of physics.
+
+So what keeps us from recursing down to the limits of known physics
+when we think about how our programs work?
+
+The answer is documentation.  We can use libraries and our programming
+language without digging into their implementations because there's a
+solid spec.  The compiler backend engineers can do their jobs because
+the hardware manufacturers document the architecture and instruction
+sets. The hardware designers succeed because the physicists document
+the laws of physics.  That's the tower, and you're a part of it.  The
+bad news, of course, is that you're not at the top of the
+tower. Someone else, or future-you, is going to have to build on the
+code you're writing.  We're all library builders here.
 
 #### Put it in comments
 
@@ -149,8 +191,9 @@ because:
    that's kinda the point: without the ability to see that
    inconsistency, there's no way to know that there's a bug.
 
-2. That makes it reasonable to combine the activities of coding and
-   documentation, which—believe it or not—are mutually supportive.
+2. Using comments makes it reasonable to combine the activities of
+   coding and documentation, which—believe it or not—are mutually
+   supportive.
 
 But if we're going to integrate documentation into our programming so
 tightly, we need to make sure it's neither intrusive for the
@@ -176,68 +219,67 @@ they're upheld:
 
 The idea started with Bertrand Meyer's own Eiffel language, and was
 picked up by many others, including D, Scala, Kotlin, and
-Clojure. Others languages, like Rust and Python, have contract
+Clojure. Other languages, like Rust and Python, have contract
 libraries that provide a near-native contract programming experience.
 
 If you use one of these languages, fantastic; absolutely leverage
 those features and libraries.  That may reduce the amount of pure
 documentation you need to write. That said, contracts are still
-fundamentally documentation. There are some that really ought to be
-expressed in English, and some others that are actually impossible to
-express as code. Examples to follow.
+fundamentally documentation. They need to appear in the API
+description used by clients, like web pages... There are some that
+really ought to be expressed in English, and some others that are
+actually impossible to express as code. Examples to follow.
+
+<!-- Where are the examples -->
 
 ### Preconditions / postconditions ###
 
 - Directly from Hoare logic, but DbC added an ethos of blame.
 
 <!-- phrasing -->
-- There is a client and a callee (server).
+
+A contract is a two sided arrangement between a client and a callee (server).
 
 - A contract binds the client to pass a valid combination of arguments
-  (precondition), and binds the callee to correctly provide the result
-  (postconditions).
-
-- If preconditions don't hold, THAT'S A BUG.  The client is at fault, and callee is
-  not required to make any promises.
-
-- If preconditions hold… and postconditions not fulfilled THAT'S A
-  BUG, the callee is at fault.  <!-- amend this later -->
-
-- Being able to say which code is at fault is extremely powerful!
+  (precondition), and binds the callee to correctly provide the
+  documented result (postconditions).
 
 - Postcondition describes /relationship/ between initial state+arguments
   and final state+return value.
 
-#### Error Handling ####
+#### The Ethos of Blame
 
-- An error is a postcondition failure.  Update the statement
+- If preconditions don't hold, THAT'S A BUG.  The client is at fault,
+  and callee is not required to make any promises.
 
-  - If preconditions hold, no error reported, and postconditions not
-    fulfilled and, the callee is at fault.
+- If preconditions hold, no error is reported*, and postconditions not
+  fulfilled THAT'S A BUG, the callee is at fault.
 
-** Throwing exception
-- Makes return value available/simple (no encoding failure)
-- Supports construction failure.
-- Simplifies postcondition
-- Simplifies client logic when the immediate client can't do anything about it
+We'll talk about errors next, but errors are NOT BUGs.
+Being able to say which code is at fault is extremely powerful! You
+know what to fix; you know who should do the work.  It's simplifying
+and clarifying.
 
-** Returning error
-- good when immediate client has a response
+##### Errors ####
 
-#### Offensive programming: don't accept nonsense inputs ####
+- Not a bug
 
-<!-- phrasing -->
-- Partial functions are a thing
+- An error is a postcondition failure where there's nobody at fault.
+  - Example: resource exhaustion
+  - Example: callee deserializing invalid data from disk
 
-Your language acknowledges this (integer multiplication, array
-indexing); you should too.
+- We don't include error effects in the postcondition.
 
-- it's a poor engineering tradeoff to make code check for errors in its own usage.
-- Example: indexing out of bounds allowed
-- You're not doing the client any favors — it complicates postconditions/results
-- What your thing *is* becomes fuzzy
-- There's room for judgement: stack top/pop could have preconditions.
-  Should they?  depends on how clients will use it.
+###### Reporting
+
+- Returning error or optional
+  - good when immediate client has a response
+  - awkward for constructors
+  
+- Throwing exception
+  - Simplifies client logic when the immediate client can't do anything about it
+  - Makes return value available/simple (no encoding failure)
+  - Supports construction failure with strong invariants.
 
 #### Choosing preconditions: ####
 
@@ -474,6 +516,33 @@ and the way to mitigate damage (like, the embarrassment of showing up at the fan
 like, clearly the butler shouldn't just walk off into the desert leaving the keys in the car if the right gas isn't available
 
 
+### Offensive Programming #####
+don't accept any nonsense, never forgive
+
+It should be a precondition that your inputs aren't nonsense.  You
+can't do the job you're promising to do otherwise.
+
+	func do_foo(x: Bar) {
+	  if (is_bad_value(x)) {
+		return
+	  } 
+	  // *actually* do foo.
+	}
+
+<!-- phrasing -->
+- Partial functions are a thing
+
+Your language acknowledges this (integer multiplication, array
+indexing); you should too.
+
+- it's a poor engineering tradeoff to make code check for errors in its own usage.
+- Example: indexing out of bounds allowed
+- You're not doing the client any favors — it complicates postconditions/results
+- What your thing *is* becomes fuzzy
+
+- There's room for judgement: stack top/pop could have preconditions.
+  Should they?  depends on how clients will use it.
+
 ## What to do in existing codebases
 
 Think globally, act locally
@@ -519,6 +588,9 @@ will be depended on by somebody.
 ## Outro
 
 <!-- phrasing -->
+
+* Fight Cynicism!
+
 * It's hard but it's worth it.
 
   Don’t make other people write your contracts.  So inefficient
