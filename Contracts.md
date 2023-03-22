@@ -5,6 +5,10 @@ and good intentions?
 
 ## Introduction
 
+Thank you to STLab team and to our group of content previewers,
+especially Laura Savino, who spent many hours with me talking about
+this material.
+
 This is the first in a series of Better Code seminars from the
 Software Technology Lab, which are aimed at elevating the quality of
 programming everywhere. We're rolling this episode out first because
@@ -23,6 +27,22 @@ ask and I'll try to clear them up.  Also speaking of languages, I'm
 going to refer to English a lot, and please consider that a shorthand
 for “whatever human languages you use to communicate about software,”
 which is just too long to repeat.
+
+### Agenda
+
+- Part 1
+  - Correctness
+  - Local Reasoning
+  - Design by Contract
+  - What's in a Contract
+  - A Story with a Moral
+
+- Part 2
+  - Good style
+  - Contract Checking
+  - Offensive Programming
+  - What to do in Existing Codebases
+  - Conclusion
 
 ## Correctness
 
@@ -201,9 +221,47 @@ because:
 But if we're going to integrate documentation into our programming so
 tightly, we need to make sure it's neither intrusive for the
 maintainer to read nor burdensome for the author to write.  Ideally,
-it should help both of them, and I'll show you how to do just that.
+it should help both of them, and in Part 2, I'll show you how to do
+just that.
 
-<!-- ** Implementation comments indicate a missing refactor -->
+But just to give you an idea that this is practical, this component
+has what I consider minimal but complete contract documentation for
+each declaration.
+
+```swift
+/// A random-access collection of `(First, Second)` pairs.
+struct PairArray<First, Second> {
+  /// The first part of each element.
+  private var first: [First] = []
+
+  /// The second part of each element.
+  private var second: [Second] = []
+
+  /// An empty instance.
+  public init() {}
+
+  /// The `i`th element.
+  public subscript(i: Int) -> (First, Second) {
+    (first[i], second[i])
+  }
+
+  /// The length.
+  public var count: Int { first.count }
+
+  /// Adds `x` to the end.
+  public mutating func append(_ x: (First, Second)) {
+    first.append(x.0)
+    second.append(x.1)
+  }
+}
+```
+
+This one's in Swift, but you can do it in any language.  I wrote the
+same component in Python, TypeScript, and C++.  Now, not every
+contract is as simple as these are, but simplicity is a goal.  In
+fact, if you can't write a terse, simple, but _complete_ contract for
+anything, there's a good chance it's badly designed.  More on all this
+later.
 
 #### Aside: Language / Library Support ####
 
@@ -288,42 +346,65 @@ propagate nonsense—garbage in, garbage out.
   - Makes return value available/simple (no encoding failure)
   - Supports construction failure with strong invariants.
 
-
 ### Invariants ###
 
-The most important contribution of Design by Contract, over and above
-Hoare Logic, was to apply Hoare's idea of “invariants” to classes, or
-more generally, user-defined types with a public/private boundary.
+An “invariant” in Hoare Logic is just a thing that has to be true at
+particular places in a program.  For example,
 
-An “invariant” is just a thing that has to be true at particular
-places in a program.  This is a really simple example, but you can
-probably see how the invariant might be useful for understanding the
-meaning of the next line.
+	grades.sort_descending()
+	// Invariant: grades is sorted in descending order.
+	grades.reverse_in_place()
+	// Invariant: grades is sorted in ascending order.
+	let found = grades.binary_search(50)
 
-	x.sort()
-                                	// <= Invariant: x is sorted
-	let foundY = x.binary_search(y) // Therefore this is legal.
+When we get to the last line, we've established the invariant that
+grades is always in ascending order.  That's powerful because
+`binary_search` has a *precondition* that the elements to search are
+sorted ascending.
 
-#### Class Invariants ####
+The most important contribution of Design by Contract was to apply
+Hoare's idea of “invariants” to user-defined types that have an 
+encapsulation boundary (public/private parts).
 
-A *class invariant* or *type invariant* is a condition that is
-established by the type's constructor and upheld by all of its
-publicly-accessible APIs.  This is just what we mean when we
-informally talk about the thing being “in a good state.”
+Meyer's *class invariant* (or *type invariant*), is just a
+formalization of what we mean when we talk about instances
+being “in a good state.”
 
 > in a good state ≅ invariant is upheld
 
-My favorite example is this type that holds a pair of private arrays,
-but its public interface is more like an array of pairs.
+More specifically, it's a condition that holds whenever a type
+interacts with clients.  My favorite example is this type that holds a
+pair of private arrays, but whose public interface is more like an
+array of pairs.  The invariant for this type is that the private
+arrays have the same length.
 
 <!-- picture -->
 
 You can probably write this type in any language; I've coded it in
 Swift, Python, TypeScript, and C++.
 
-There are four basic operations: create an empty instance, get the nth
-pair, get the length, and append a new pair.  The invariant for this
-type is that the private arrays always have the same length.
+It's important to realize that to be a class invariant, the condition
+only needs to hold at the public interface boundary; it's perfectly
+fine to violate the condition when no clients can observe it.  In
+fact, it's necessary:
+
+<!-- grab language from slides.  -->
+
+The power of having public and private access control, is that it
+doesn't take much attention to uphold the invariant.  The condition
+needs to be established by whatever constructs the instance, and that
+every mutating operation with access to private parts needs to be sure
+to re-establish the condition.
+
+
+- Invariants
+  - 2 arrays example
+	- show weakening private invariant complicates implementation
+	- show weakening public invariant (length > 0) complicates clients
+      and weakens semantics of whole type.
+  - Tower of invariants to whole program invariants
+  - Purpose of encapsulation and Database => EmployeeDatabase
+
 
 X0 X1 X2 X3
 Y0 Y1 Y2
@@ -333,31 +414,6 @@ Y0 Y1 Y2
 Maintaining that invariant is what I need to do in order to 
 Knowing the invariant allows us to implement the length function by
 returning the length of the first array.
-
-<!-- make this example work -->
-
-```swift
-/// A random-access collection of `(First, Second)` pairs.
-struct PairArray<First, Second> {
-  /// The first part of each element.
-  private var first: [First] = []
-
-  /// The second part of each element.
-  private var second: [Second] = []
-
-  /// An empty instance.
-  public init() {}
-
-  /// The `i`th element.
-  public subscript(i: Int) -> (First, Second)
-
-  /// The length.
-  public func length() -> Int
-
-  /// Adds x to the end.
-  public mutating func append(_ x: (First, Second))
-}
-```
 
 <!-- show weakened private invariant -->
 
@@ -375,6 +431,36 @@ So Encode program invariants in a type
 (e.g. parent is an element in the database of people)
 <!-- no mutation, no need to think about it. -->
 
+### Arbitrary Damage
+
+You're an idle billionaire.  You own a supercar, a $7M Bugatti Divo.  
+and you've got a contract with an ultra-exclusive "car butler" who
+takes care of all the maintenance, including refueling. Now one day you
+
+The contract, of course, says the butler is only
+going to use ultra-premium gas.  You also have a contract with the
+state that says you have to keep this thing's emissions within certain
+smog limits.  Well at some point the butler puts regular gas for a
+Prius in there, and of course this starts eating away at the valves
+and piston heads.  You never really push the car too hard, so you
+don't notice any difference in performance, but finally you have it
+taken for its smog checkup and it fails.  You've broken the
+precondition for the smog test, due to an earlier unnoticed bug
+(regular gas in supercar).  You take the car back to the dealer and
+they tell you the damage from regular gas is too extensive and now the
+car is valued at only $2M, practically worthless.
+
+- best effort butler drives the car home anyway and tells you you're all set.  Then you destroy the car.
+
+<!-- Deal with resource exhaustion as recoverable in the following -->
+
+Laura: I wonder if the "reasonable fallback" behavior can illustrate damage here, too -- like, the gas station within a 30-mile drive of the mansion didn't have ultra premium, so the butler picked the highest value available
+2:27
+and the way to mitigate damage (like, the embarrassment of showing up at the fancy car party with no gas) is to report the failure at the point of failure AND stop
+2:28
+like, clearly the butler shouldn't just walk off into the desert leaving the keys in the car if the right gas isn't available
+
+# ---------- END OF PART 1 ---------
 
 ### Other elements of contracts ###
 
@@ -390,6 +476,8 @@ So Encode program invariants in a type
     it as a hack in a well-named operation.
 
 ## Good contract style
+<!-- ** Implementation comments indicate a missing refactor -->
+
 <!-- phrasing -->
 - Names 
   - Think about how the API plays out at the use-site.  Things are
@@ -408,6 +496,8 @@ So Encode program invariants in a type
   - Constructors can be documented *as* the created instance.
   - Subscripts are a generalization of parameters and can be
     documented *as* the acccessed property.
+  - Be willing to use implied preconditions
+	“Returns the `i`th element” => `i` must be in range.
 
 - Use a summary sentence fragment.
   - Say what a non-mutating function returns
@@ -467,34 +557,6 @@ this ==  NULL doesn't work.
 Checking that pointer is in range doesn't work.
 Checking that your signed ints didn't overflow doesn't work.
 
-### Arbitrary Damage Stories
-
-You're an idle billionaire.  You own a supercar, a $7M Bugatti Divo.  
-and you've got a contract with an ultra-exclusive "car butler" who
-takes care of all the maintenance, including refueling. Now one day you
-
-The contract, of course, says the butler is only
-going to use ultra-premium gas.  You also have a contract with the
-state that says you have to keep this thing's emissions within certain
-smog limits.  Well at some point the butler puts regular gas for a
-Prius in there, and of course this starts eating away at the valves
-and piston heads.  You never really push the car too hard, so you
-don't notice any difference in performance, but finally you have it
-taken for its smog checkup and it fails.  You've broken the
-precondition for the smog test, due to an earlier unnoticed bug
-(regular gas in supercar).  You take the car back to the dealer and
-they tell you the damage from regular gas is too extensive and now the
-car is valued at only $2M, practically worthless.
-
-- best effort butler drives the car home anyway and tells you you're all set.  Then you destroy the car.
-
-<!-- Deal with resource exhaustion as recoverable in the following -->
-
-Laura: I wonder if the "reasonable fallback" behavior can illustrate damage here, too -- like, the gas station within a 30-mile drive of the mansion didn't have ultra premium, so the butler picked the highest value available
-2:27
-and the way to mitigate damage (like, the embarrassment of showing up at the fancy car party with no gas) is to report the failure at the point of failure AND stop
-2:28
-like, clearly the butler shouldn't just walk off into the desert leaving the keys in the car if the right gas isn't available
 
 
 ### Offensive Programming #####
@@ -591,23 +653,6 @@ will be depended on by somebody.
   syndrome—it's OKAY; as a programmer you've earned the
   right.
 
-
-# ---- EDITS -----
-
-- Add thank-yous to STLab team and content previewers, especially Laura Savino.
-
-- Show examples of minimal contracts when promising tractable
-  documentation.
-
-- Invariants
-  - 2 arrays example
-	- show weakening private invariant complicates implementation
-	- show weakening public invariant (length > 0) complicates clients
-      and weakens semantics of whole type.
-  - Tower of invariants to whole program invariants
-  - Purpose of encapsulation and Database => EmployeeDatabase
-
-- Close with story.  Ask people to think about the moral.
 
 # -------- CUT -------
 Hoare realized that *loops* have invariants that hold before and after
