@@ -59,8 +59,6 @@ confidence that you understand some code, or that you've fixed a bug,
 it's OK to slide into a more formal mode. Not as an academic exercise,
 but because it's practical and useful. 
 
-<!-- consider saving that last idea for the Outro. -->
-
 ## Local Reasoning
 
 That kind of everyday thinking only works if we can reason locally...
@@ -215,7 +213,6 @@ indexing); you should too.
 
 ### Choosing preconditions:
 <!-- phrasing -->
-- Untestable precondition: comparison function is non-random, pointer is valid
 - Impractical precondition: user input to parser is valid
 - Impractical precondition: changes complexity of operation
 - Weak preconditions propagate nonsense, create untested paths
@@ -229,6 +226,35 @@ indexing); you should too.
 - There's room for judgement: stack top/pop could have preconditions.
   Should they?  depends on how clients will use it.
 
+### Arbitrary Damage Stories
+
+You're an idle billionaire.  You own a supercar, a $7M Bugatti Divo.  
+and you've got a contract with an ultra-exclusive "car butler" who
+takes care of all the maintenance, including refueling. Now one day you
+
+The contract, of course, says the butler is only
+going to use ultra-premium gas.  You also have a contract with the
+state that says you have to keep this thing's emissions within certain
+smog limits.  Well at some point the butler puts regular gas for a
+Prius in there, and of course this starts eating away at the valves
+and piston heads.  You never really push the car too hard, so you
+don't notice any difference in performance, but finally you have it
+taken for its smog checkup and it fails.  You've broken the
+precondition for the smog test, due to an earlier unnoticed bug
+(regular gas in supercar).  You take the car back to the dealer and
+they tell you the damage from regular gas is too extensive and now the
+car is valued at only $2M, practically worthless.
+
+- best effort butler drives the car home anyway and tells you you're all set.  Then you destroy the car.
+
+<!-- Deal with resource exhaustion as recoverable in the following -->
+
+Laura: I wonder if the "reasonable fallback" behavior can illustrate damage here, too -- like, the gas station within a 30-mile drive of the mansion didn't have ultra premium, so the butler picked the highest value available
+2:27
+and the way to mitigate damage (like, the embarrassment of showing up at the fancy car party with no gas) is to report the failure at the point of failure AND stop
+2:28
+like, clearly the butler shouldn't just walk off into the desert leaving the keys in the car if the right gas isn't available
+
 ## Error Handling
 - An error is a postcondition failure.  Update the 
 ** Throwing exception
@@ -239,8 +265,6 @@ indexing); you should too.
 
 ** Returning error
 - good when immediate client has a response
-
-
 
 ## Invariants
 
@@ -279,7 +303,7 @@ leaves i equal to a.length.  For a simple loop like this, you probably
 don't need to do a proof, but if you're interested, it's a good
 exercise.
 
-## Class Invariants
+### Class Invariants
 
 A *class invariant* or *type invariant* is a condition that is
 established by the type's constructor and upheld by all of its
@@ -302,9 +326,7 @@ There are four basic operations: create an empty instance, get the nth
 pair, get the length, and append a new pair.  The invariant for this
 type is that the private arrays always have the same length.
 
-To show why this invariant is important, let's look at what happens if
-we weaken it by publicly exposing write access to the arrays. Now a
-client can change the length of the two arrays independently.
+<!-- make this example work -->
 
 ```swift
 /// A random-access collection of `(First, Second)` pairs.
@@ -322,44 +344,9 @@ struct PairArray<First, Second> {
   public subscript(i: Int) -> (First, Second)
 
   /// The length.
-  public var count: Int
+  public var length: Int
 
   /// Adds x to the end.
-  public mutating func append(_ x: (First, Second))
-}
-```
-
-vs.
-
-```swift
-/// A random-access collection of `(First, Second)` pairs that can
-/// also be viewed as having two independent arrays `[First]`,
-/// `[Second]`.
-///
-/// The collection of pairs is as long as the shorter of those two
-/// independent arrays, with the element at index i being `(first[i],
-/// second[i])`.
-struct PairArray<First, Second> {
-  /// The first part of each element, plus any excess `First`
-  /// parts.
-  public var first: [First] = []
-
-  /// The first part of each element, plus any excess `Second`
-  /// parts.
-  public var second: [Second] = []
-
-  /// An empty instance.
-  public init() {}
-
-  /// The `i`th element of the collection of pairs.
-  public subscript(i: Int) -> (First, Second)
-
-  /// The length of the collection of pairs.
-  public var count: Int
-
-  /// Adds `x.0` to `first` and `x.1` to `second`.
-  ///
-  /// What this does to 
   public mutating func append(_ x: (First, Second))
 }
 ```
@@ -442,89 +429,33 @@ So Encode program invariants in a type
 
   consider "Actualize"
 
-## Outro
-
+## Checking
 <!-- phrasing -->
-* It's hard but it's worth it.
+In a project with more than a couple participants, these checks are super-valuable.
 
-  Don’t make other people write your contracts.  So inefficient
-
-* Magic Feedback loop with design
-  - Contract too complicated? Fix the API!
-  - Contract's english description will tell you what to call the API.
-
-* If you've secretly been fooling around with Hoare logic but were
-  embarrassed to tell anyone—maybe you have a little impostor
-  syndrome—it's OKAY; as a programmer you've earned the
-  right.
-
-# -------------------- Stuff to incorporate ------------------------
+- Checks must not have significant side-effects
 
 
-## Deal with failing constructors/exceptions, null.
-## 
+- Contracts are part of the interface so assertions in the body are not enough.
+- Untestable precondition: comparison function is stable.
 
-## Arbitrary damage
-You're an idle billionaire.  You own a supercar, a $7M Bugatti Divo.  
-and you've got a contract with an ultra-exclusive "car butler" who
-takes care of all the maintenance, including refueling. Now one day you
+- For reusable code, bottleneck your response
+  - You might just want to terminate
+  - You might want to take emergency shutdown measures
+  - You might… want to throw an exception… but beware.
+  - You might want to do something different in testing from what you do in shipping code.
 
-The contract, of course, says the butler is only
-going to use ultra-premium gas.  You also have a contract with the
-state that says you have to keep this thing's emissions within certain
-smog limits.  Well at some point the butler puts regular gas for a
-Prius in there, and of course this starts eating away at the valves
-and piston heads.  You never really push the car too hard, so you
-don't notice any difference in performance, but finally you have it
-taken for its smog checkup and it fails.  You've broken the
-precondition for the smog test, due to an earlier unnoticed bug
-(regular gas in supercar).  You take the car back to the dealer and
-they tell you the damage from regular gas is too extensive and now the
-car is valued at only $2M, practically worthless.
-
-- best effort butler drives the car home anyway and tells you you're all set.  Then you destroy the car.
-
-<!-- Deal with resource exhaustion as recoverable in the following -->
-
-Laura: I wonder if the "reasonable fallback" behavior can illustrate damage here, too -- like, the gas station within a 30-mile drive of the mansion didn't have ultra premium, so the butler picked the highest value available
-2:27
-and the way to mitigate damage (like, the embarrassment of showing up at the fancy car party with no gas) is to report the failure at the point of failure AND stop
-2:28
-like, clearly the butler shouldn't just walk off into the desert leaving the keys in the car if the right gas isn't available
-
-## Assertions can be ignored when reasoning about program semantics
+- Assertions 
+can be ignored when reasoning about program semantics
 As long as they don't have side-effects and they stop the program.
 They don't induce control flow.
 
-## Debugging:
-** The only way to get control of a misbehaving system is to establish what the contracts are.
-If someone else has to do that, huge cost!
-** Add precondition checks
-- When you can and
-- it's affordable
-
-** Add invariant checks
-where? exit of ctors and mutating methods with access to the private parts
-
-## Misc
-
-** Contracts are part of the interface
-** Assertions in the body are not enough.
-
-* Responding to precondition violations
-Really in a project with more than a couple participants, these checks are super-valuable.
-** For reusable code, bottleneck your response
-- You might just want to terminate
-- You might want to take emergency shutdown measures
-- You might… want to throw an exception… but beware.
-- You might want to do something different in testing from what you do in shipping code.
-
-** UB
+- Checking after UB doesn't work:
 this ==  NULL doesn't work.
 Checking that pointer is in range doesn't work.
 Checking that your signed ints didn't overflow doesn't work.
 
-* What to do in existing code
+## What to do in existing code
 
 Think globally, act locally
 
@@ -550,4 +481,45 @@ will be depended on by somebody.
   - discourage depending on things you might want to change
   - as consequence, break fewer clients
   - gives you grounds for indemnity!
+
+## Outro
+
+<!-- phrasing -->
+* It's hard but it's worth it.
+
+  Don’t make other people write your contracts.  So inefficient
+
+* Magic Feedback loop with design
+  - Contract too complicated? Fix the API!
+  - Contract's english description will tell you what to call the API.
+
+* If you've secretly been fooling around with Hoare logic but were
+  embarrassed to tell anyone—maybe you have a little impostor
+  syndrome—it's OKAY; as a programmer you've earned the
+  right.
+
+# -------------------- Stuff to incorporate ------------------------
+
+
+## Deal with failing constructors/exceptions, null.
+## 
+
+
+
+## Debugging:
+** The only way to get control of a misbehaving system is to establish what the contracts are.
+If someone else has to do that, huge cost!
+** Add precondition checks
+- When you can and
+- it's affordable
+
+** Add invariant checks
+where? exit of ctors and mutating methods with access to the private parts
+
+## Misc
+
+
+
+
+** UB
 
