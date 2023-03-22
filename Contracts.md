@@ -100,7 +100,7 @@ paradigm, because M. Meyer was onto something deep and fundamental.
 So I'm going to present what we think of as a modern generalization of
 DbC.
 
-## Real Talk: It's Documentation
+### Real Talk: It's Documentation
 
 > …a software system is viewed as a set of communicating
 > components whose interaction is based on precisely defined
@@ -129,7 +129,7 @@ there are lots of counterproductive approaches to documentation, I'm
 going to show you one that is practical *and*—if you give the process
 the attention it deserves—can help you improve the code of your APIs.
 
-### Documentation and local reasoning
+#### Documentation and local reasoning
 
 I also want to point out that documentation is essential for local
 reasoning.  It's the reason I don't need to be a condensed matter
@@ -138,7 +138,7 @@ physicist to program a computer.
 <!-- insert existing material about documentation/local reasoning
 here. -->
 
-### Put it in comments
+#### Put it in comments
 
 Lastly, I want to say, this documentation should go in your code,
 because:
@@ -159,7 +159,7 @@ it should help both of them, and I'll show you how to do just that.
 
 <!-- ** Implementation comments indicate a missing refactor -->
 
-## Language / Library Support
+### Aside: Language / Library Support
 
 You may have heard that some languages have features to support Design
 by Contract.  In general, that means you can write *parts* of your
@@ -186,7 +186,7 @@ fundamentally documentation. There are some that really ought to be
 expressed in English, and some others that are actually impossible to
 express as code. Examples to follow.
 
-## Preconditions / postconditions
+### Preconditions / postconditions ###
 
 - Directly from Hoare logic, but DbC added an ethos of blame.
 
@@ -208,7 +208,8 @@ express as code. Examples to follow.
 - Postcondition describes /relationship/ between initial state+arguments
   and final state+return value.
 
-## Error Handling
+#### Error Handling ####
+
 - An error is a postcondition failure.  Update the statement
 
   - If preconditions hold, no error reported, and postconditions not
@@ -223,13 +224,8 @@ express as code. Examples to follow.
 ** Returning error
 - good when immediate client has a response
 
-### Choosing preconditions:
-<!-- phrasing -->
-- Impractical precondition: user input to parser is valid
-- Impractical precondition: changes complexity of operation
-- Weak preconditions propagate nonsense, create untested paths
+#### Offensive programming: don't accept nonsense inputs ####
 
-## Offensive programming: don't accept nonsense inputs
 <!-- phrasing -->
 - Partial functions are a thing
 
@@ -243,37 +239,14 @@ indexing); you should too.
 - There's room for judgement: stack top/pop could have preconditions.
   Should they?  depends on how clients will use it.
 
-### Arbitrary Damage Stories
+#### Choosing preconditions: ####
 
-You're an idle billionaire.  You own a supercar, a $7M Bugatti Divo.  
-and you've got a contract with an ultra-exclusive "car butler" who
-takes care of all the maintenance, including refueling. Now one day you
+<!-- phrasing -->
+- Impractical precondition: user input to parser is valid
+- Impractical precondition: changes complexity of operation
+- Weak preconditions propagate nonsense, create untested paths
 
-The contract, of course, says the butler is only
-going to use ultra-premium gas.  You also have a contract with the
-state that says you have to keep this thing's emissions within certain
-smog limits.  Well at some point the butler puts regular gas for a
-Prius in there, and of course this starts eating away at the valves
-and piston heads.  You never really push the car too hard, so you
-don't notice any difference in performance, but finally you have it
-taken for its smog checkup and it fails.  You've broken the
-precondition for the smog test, due to an earlier unnoticed bug
-(regular gas in supercar).  You take the car back to the dealer and
-they tell you the damage from regular gas is too extensive and now the
-car is valued at only $2M, practically worthless.
-
-- best effort butler drives the car home anyway and tells you you're all set.  Then you destroy the car.
-
-<!-- Deal with resource exhaustion as recoverable in the following -->
-
-Laura: I wonder if the "reasonable fallback" behavior can illustrate damage here, too -- like, the gas station within a 30-mile drive of the mansion didn't have ultra premium, so the butler picked the highest value available
-2:27
-and the way to mitigate damage (like, the embarrassment of showing up at the fancy car party with no gas) is to report the failure at the point of failure AND stop
-2:28
-like, clearly the butler shouldn't just walk off into the desert leaving the keys in the car if the right gas isn't available
-
-
-## Invariants
+### Invariants ###
 
 The most important contribution of Design by Contract, over and above
 Hoare Logic, was to apply Hoare's idea of “invariants” to classes, or
@@ -310,7 +283,7 @@ leaves i equal to a.length.  For a simple loop like this, you probably
 don't need to do a proof, but if you're interested, it's a good
 exercise.
 
-### Class Invariants
+#### Class Invariants ####
 
 A *class invariant* or *type invariant* is a condition that is
 established by the type's constructor and upheld by all of its
@@ -379,7 +352,8 @@ So Encode program invariants in a type
 <!-- no mutation, no need to think about it. -->
 
 
-## Other elements of contracts
+#### Other elements of contracts ####
+
 <!-- phrasing -->
 - Function Signatures
 - Cost in time / memory.
@@ -469,6 +443,36 @@ They don't induce control flow.
 this ==  NULL doesn't work.
 Checking that pointer is in range doesn't work.
 Checking that your signed ints didn't overflow doesn't work.
+
+### Arbitrary Damage Stories
+
+You're an idle billionaire.  You own a supercar, a $7M Bugatti Divo.  
+and you've got a contract with an ultra-exclusive "car butler" who
+takes care of all the maintenance, including refueling. Now one day you
+
+The contract, of course, says the butler is only
+going to use ultra-premium gas.  You also have a contract with the
+state that says you have to keep this thing's emissions within certain
+smog limits.  Well at some point the butler puts regular gas for a
+Prius in there, and of course this starts eating away at the valves
+and piston heads.  You never really push the car too hard, so you
+don't notice any difference in performance, but finally you have it
+taken for its smog checkup and it fails.  You've broken the
+precondition for the smog test, due to an earlier unnoticed bug
+(regular gas in supercar).  You take the car back to the dealer and
+they tell you the damage from regular gas is too extensive and now the
+car is valued at only $2M, practically worthless.
+
+- best effort butler drives the car home anyway and tells you you're all set.  Then you destroy the car.
+
+<!-- Deal with resource exhaustion as recoverable in the following -->
+
+Laura: I wonder if the "reasonable fallback" behavior can illustrate damage here, too -- like, the gas station within a 30-mile drive of the mansion didn't have ultra premium, so the butler picked the highest value available
+2:27
+and the way to mitigate damage (like, the embarrassment of showing up at the fancy car party with no gas) is to report the failure at the point of failure AND stop
+2:28
+like, clearly the butler shouldn't just walk off into the desert leaving the keys in the car if the right gas isn't available
+
 
 ## What to do in existing codebases
 
