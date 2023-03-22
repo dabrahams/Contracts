@@ -390,46 +390,53 @@ fact, it's necessary:
 
 <!-- grab language from slides.  -->
 
-The power of having public and private access control, is that it
-doesn't take much attention to uphold the invariant.  The condition
-needs to be established by whatever constructs the instance, and that
-every mutating operation with access to private parts needs to be sure
-to re-establish the condition.
+The beauty of having public and private access control is that it
+doesn't take much attention to uphold a class invariant.  The
+condition needs to be established the constructor, and every mutating
+operation with access to private parts needs to be sure to preserve,
+or re-establish it.  But aside from that, you're golden.  Obviously
+non-mutating operations don't change anything and can't disturb the
+invariant.  Even mutating operations are in the clear so long as they
+only use the type's public interface.
 
+#### The Tower of Invariants
 
-- Invariants
-  - 2 arrays example
-	- show weakening private invariant complicates implementation
-	- show weakening public invariant (length > 0) complicates clients
-      and weakens semantics of whole type.
-  - Tower of invariants to whole program invariants
-  - Purpose of encapsulation and Database => EmployeeDatabase
+The tower of abstraction mentioned earlier comes with a tower of
+invariants.  The invariants of the type with the two arrays in it are
+built on—and depend on—the invariants of the individual arrays, and
+you could embed this type into some other data structure with its own
+invariant.
 
+In fact, you can think of the entire state of your program as one big
+datastructure with its own invariants, and formalize what it means for
+the program to “be in a good state” that way.  For example, 
+
+- you might have a database of employees, each with
+  - an ID of its own
+  - a manager ID (Shantanu gets to be his own manager)
+
+It's an invariant of your program that a manager ID can't just be
+random; it has to identify an employee in the database—that's part of
+what it means for the program to be in a good state, and all through
+the program you have code to ensure it's upheld.  It would be a great
+idea to identify and documenting that whole-program invariant.
+
+An even better idea is to use *encapsulate* the invariant in a type,
+and document _that_.  So instead of using a Database type directly,
+maybe create an EmployeeDatabase type with a private Database, whose
+public API always upholds that invariant.  Now you can remove that
+logic from the rest of your code.
+
+Upholding invariants is the _entire purpose_ of encapsulation, so use
+it whenever you can!
+
+#### Strength and Weakness (possibly leave for part 2)
+- show weakening private invariant complicates implementation
+- show weakening public invariant (length > 0) complicates clients
+  and weakens semantics of whole type.
 
 X0 X1 X2 X3
 Y0 Y1 Y2
-
-<!-- show all four implementations -->
-
-Maintaining that invariant is what I need to do in order to 
-Knowing the invariant allows us to implement the length function by
-returning the length of the first array.
-
-<!-- show weakened private invariant -->
-
-<!-- show pimpl/resource -->
-
-<!-- ordering -->
-If you're the type author, the invariant is basically a “contract with
-yourself.” The invariant, or parts of it, could also be publicly
-visible.  So if we made the private arrays publicly readable we could
-promise the user that their lengths will always match.
-
-
-<!-- the purpose of public/private is to uphold invariants -->
-So Encode program invariants in a type 
-(e.g. parent is an element in the database of people)
-<!-- no mutation, no need to think about it. -->
 
 ### Arbitrary Damage
 
@@ -462,6 +469,8 @@ like, clearly the butler shouldn't just walk off into the desert leaving the key
 
 # ---------- END OF PART 1 ---------
 
+## Invariants and errors
+## Pimpl and Nondestructive Move
 ### Other elements of contracts ###
 
 <!-- phrasing -->
