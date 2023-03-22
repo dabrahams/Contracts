@@ -594,6 +594,8 @@ will be depended on by somebody.
 
 # ---- EDITS -----
 
+- Add thank-yous to STLab team and content previewers, especially Laura Savino.
+
 - Show examples of minimal contracts when promising tractable
   documentation.
 
