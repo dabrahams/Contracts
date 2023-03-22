@@ -18,11 +18,7 @@ class PairList(Generic[First, Second]):
         self.__first, self.__second = [], []
 
     def __getitem__(self: Self, i: int) -> Tuple[First, Second]:
-        """
-        Returns the ith element.
-
-        Precondition: i < len(self)
-        """
+        "The ith element."
         return (self.__first[i], self.__second[i])
 
     def __len__(self: Self) -> int:

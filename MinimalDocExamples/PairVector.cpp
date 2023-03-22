@@ -1,8 +1,7 @@
 #include <vector>
 #include <utility>
 
-/// A random-access collection of `(First, Second)` pairs, stored so
-/// as to avoid internal fragmentation.
+/// A random-access collection of `(First, Second)` pairs.
 template <class First, class Second>
 class pair_vector {
 private:
@@ -13,18 +12,18 @@ private:
   std::vector<Second> second = std::vector<Second>();
 
 public:
-  /// Creates an empty instance.
+  /// An empty instance.
   pair_vector() {}
 
-  /// Returns the `i`th element of *this.
+  /// The `i`th element.
   auto operator [] (std::size_t i) const -> std::pair<First, Second> {
     return std::make_pair(first[i], second[i]);
   }
 
-  /// Returns the length of *this.
+  /// Returns the length.
   auto size() const -> std::size_t { return first.size(); }
 
-  /// Adds x to the end of *this.
+  /// Adds x to the end.
   void push_back(std::pair<First, Second> x) {
     first.push_back(x.first);
     second.push_back(x.second);

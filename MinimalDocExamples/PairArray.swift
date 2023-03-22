@@ -17,7 +17,7 @@ struct PairArray<First, Second> {
   /// The length.
   public var count: Int { first.count }
 
-  /// Adds x to the end.
+  /// Adds `x` to the end.
   public mutating func append(_ x: (First, Second)) {
     first.append(x.0)
     second.append(x.1)

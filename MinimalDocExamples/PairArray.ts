@@ -1,4 +1,4 @@
-// A random-access collection of pairs.
+// A random-access collection of [First, Second] pairs.
 class PairArray<First, Second> {
   // The first part of each element.
   private first: First[] = [];
@@ -6,10 +6,10 @@ class PairArray<First, Second> {
   // The second part of each element.
   private second: Second[] = [];
 
-  // Creates an empty instance.
+  // An empty instance.
   public constructor() {}
 
-  // The `i`th element.
+  // Returns the `i`th element.
   public get(i: number): [First, Second] {
     return [this.first[i], this.second[i]];
   }
@@ -23,6 +23,7 @@ class PairArray<First, Second> {
     this.second.push(x[1]);
   }
 }
+
 const x = new PairArray<number, number>();
 x.push([1, 2]);
 console.log(x.get(0));
