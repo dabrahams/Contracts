@@ -118,6 +118,9 @@ talks to another. In other words, they're relationships.  Thinking in
 terms of relationships is one of the themes of Better Code, and we'll
 be pointing relationships out as they come up.
 
+Meyer breaks DbC down into three main components called preconditions,
+postconditions, and invariants.
+
 If you go back and look at Meyers' writings, you'll see he mentions
 object-oriented programming all the time (this was the 80's after
 all), and his idea of a “component” is a class instance, but his
@@ -260,6 +263,10 @@ Being able to say which code is at fault is extremely powerful! You
 know what to fix; you know who should do the work.  It's simplifying
 and clarifying.
 
+Don't be afraid of having lots of preconditions. You should only
+promise results for inputs that make sense. Weak preconditions
+propagate nonsense—garbage in, garbage out.
+
 ##### Errors ####
 
 - Not a bug
@@ -281,12 +288,6 @@ and clarifying.
   - Makes return value available/simple (no encoding failure)
   - Supports construction failure with strong invariants.
 
-#### Choosing preconditions: ####
-
-<!-- phrasing -->
-- Impractical precondition: user input to parser is valid
-- Impractical precondition: changes complexity of operation
-- Weak preconditions propagate nonsense, create untested paths
 
 ### Invariants ###
 
@@ -302,28 +303,6 @@ meaning of the next line.
 	x.sort()
                                 	// <= Invariant: x is sorted
 	let foundY = x.binary_search(y) // Therefore this is legal.
-
-Hoare realized that *loops* have invariants that hold before and after
-each iteration, and showed how they could be used to prove the
-correctness of interesting algorithms.  This is just to give you a
-flavor.  Don't worry if you don't get it; it won't be on the test.
-
-    i = 0
-	
-	// Loop invariant: if J < i, a[J] != x
-	while (i < a.length && a[i] != x) { 
-		i += 1
-	}
-	
-	// a[i] is the first element == x, or 
-	//   no such element exists and i == a.length
-	
-This one says all elements preceding element `i` are not equal to `x`.
-Combining that loop invariant with the fact that `i` is incremented by
-1 each iteration, lets you prove the loop either finds the first x, or
-leaves i equal to a.length.  For a simple loop like this, you probably
-don't need to do a proof, but if you're interested, it's a good
-exercise.
 
 #### Class Invariants ####
 
@@ -345,6 +324,9 @@ Swift, Python, TypeScript, and C++.
 There are four basic operations: create an empty instance, get the nth
 pair, get the length, and append a new pair.  The invariant for this
 type is that the private arrays always have the same length.
+
+X0 X1 X2 X3
+Y0 Y1 Y2
 
 <!-- show all four implementations -->
 
@@ -404,9 +386,10 @@ So Encode program invariants in a type
 - Names
   - Name means something; should reflect the postcondition.  Respect
     the name, or change it.
-  - sort with a random comparison is not a shuffle.  At worst, isolate it as a hack in a well-named operation.
+  - sort with a random comparison is not a shuffle.  At worst, isolate
+    it as a hack in a well-named operation.
 
-## How to write good contracts
+## Good contract style
 <!-- phrasing -->
 - Names 
   - Think about how the API plays out at the use-site.  Things are
@@ -415,12 +398,6 @@ So Encode program invariants in a type
   - Express the most specific abstraction being represented.
   - Yes, use a thesaurus!
     Example: Position vs identity vs iterator
-
-- A lot of people are afraid of being overwhelmed by documentation.
-  - You can find all kinds of reasons on the web that documentation is
-    supposedly a waste of time.
-  - If you've been to any of my talks you know that I don't agree.
-  - Living with your own code for 3-5 years will change your mind about that.
 
 - Omit needless words
   - Don't say "An abstraction that…", "A type representing," etc.
@@ -436,7 +413,8 @@ So Encode program invariants in a type
   - Say what a non-mutating function returns
   - Say what a void-returning mutating function does
   - Other functions: choose based on the primary role.  Usually what
-    it does, and incidentally what it returns. An exception might be a cache function.
+    it does, and incidentally what it returns. An exception might be a
+    cache function.
   - Say what a type is.
 - To support local reasoning, the contract ≠ implementation
 - Hold your feet to the fire for meaningfulness
@@ -462,9 +440,12 @@ So Encode program invariants in a type
 
 ## Checking
 <!-- phrasing -->
-In a project with more than a couple participants, these checks are super-valuable.
+
+In a project with more than a couple participants, these checks are
+super-valuable.
 
 - Checks must not have significant side-effects
+- Checks must not change complexity of operation
 
 
 - Contracts are part of the interface so assertions in the body are not enough.
@@ -543,6 +524,12 @@ indexing); you should too.
 - There's room for judgement: stack top/pop could have preconditions.
   Should they?  depends on how clients will use it.
 
+and hide bugs. Usually they create execution paths that are never
+tested and may be buggy.
+
+> **Note: Strong Contracts Simplify Code**
+
+
 ## What to do in existing codebases
 
 Think globally, act locally
@@ -605,4 +592,41 @@ will be depended on by somebody.
   right.
 
 
+# ---- EDITS -----
+
+- Show examples of minimal contracts when promising tractable
+  documentation.
+
+- Invariants
+  - 2 arrays example
+	- show weakening private invariant complicates implementation
+	- show weakening public invariant (length > 0) complicates clients
+      and weakens semantics of whole type.
+  - Tower of invariants to whole program invariants
+  - Purpose of encapsulation and Database => EmployeeDatabase
+
+- Close with story.  Ask people to think about the moral.
+
+# -------- CUT -------
+Hoare realized that *loops* have invariants that hold before and after
+each iteration, and showed how they could be used to prove the
+correctness of interesting algorithms.  This is just to give you a
+flavor.  Don't worry if you don't get it; it won't be on the test.
+
+    i = 0
+	
+	// Loop invariant: if J < i, a[J] != x
+	while (i < a.length && a[i] != x) { 
+		i += 1
+	}
+	
+	// a[i] is the first element == x, or 
+	//   no such element exists and i == a.length
+	
+This one says all elements preceding element `i` are not equal to `x`.
+Combining that loop invariant with the fact that `i` is incremented by
+1 each iteration, lets you prove the loop either finds the first x, or
+leaves i equal to a.length.  For a simple loop like this, you probably
+don't need to do a proof, but if you're interested, it's a good
+exercise.
 

@@ -1,5 +1,4 @@
-/// A random-access collection of `(First, Second)` pairs, stored so
-/// as to avoid internal fragmentation.
+/// A random-access collection of `(First, Second)` pairs.
 struct PairArray<First, Second> {
   /// The first part of each element.
   private var first: [First] = []
@@ -7,7 +6,7 @@ struct PairArray<First, Second> {
   /// The second part of each element.
   private var second: [Second] = []
 
-  /// Creates an empty instance.
+  /// An empty instance.
   public init() {}
 
   /// The `i`th element.
