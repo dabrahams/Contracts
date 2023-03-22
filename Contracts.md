@@ -38,6 +38,8 @@ it's futile to pursue correctness, but I disagree, for three reasons:
   
 - It's more practical than you might think.
 
+### Additionally: Strong Contracts Simplify Code
+
 I want to be clear, though, when I talk about correctness, I don't
 mean some kind of elaborate formal proof. I mean achieving correctness
 through the sort of everyday thinking that we do while
@@ -195,21 +197,31 @@ express as code. Examples to follow.
   (precondition), and binds the callee to correctly provide the result
   (postconditions).
 
-- If preconditions don't hold, the client is at fault, and callee is
+- If preconditions don't hold, THAT'S A BUG.  The client is at fault, and callee is
   not required to make any promises.
 
-- If preconditions hold and postconditions not fulfilled, the callee
-  is at fault.  <!-- amend this later -->
+- If preconditions hold… and postconditions not fulfilled THAT'S A
+  BUG, the callee is at fault.  <!-- amend this later -->
 
 - Being able to say which code is at fault is extremely powerful!
 
 - Postcondition describes /relationship/ between initial state+arguments
   and final state+return value.
 
-- Partial functions are a thing
+## Error Handling
+- An error is a postcondition failure.  Update the statement
 
-Your language acknowledges this (integer multiplication, array
-indexing); you should too.
+  - If preconditions hold, no error reported, and postconditions not
+    fulfilled and, the callee is at fault.
+
+** Throwing exception
+- Makes return value available/simple (no encoding failure)
+- Supports construction failure.
+- Simplifies postcondition
+- Simplifies client logic when the immediate client can't do anything about it
+
+** Returning error
+- good when immediate client has a response
 
 ### Choosing preconditions:
 <!-- phrasing -->
@@ -219,6 +231,11 @@ indexing); you should too.
 
 ## Offensive programming: don't accept nonsense inputs
 <!-- phrasing -->
+- Partial functions are a thing
+
+Your language acknowledges this (integer multiplication, array
+indexing); you should too.
+
 - it's a poor engineering tradeoff to make code check for errors in its own usage.
 - Example: indexing out of bounds allowed
 - You're not doing the client any favors — it complicates postconditions/results
@@ -255,16 +272,6 @@ and the way to mitigate damage (like, the embarrassment of showing up at the fan
 2:28
 like, clearly the butler shouldn't just walk off into the desert leaving the keys in the car if the right gas isn't available
 
-## Error Handling
-- An error is a postcondition failure.  Update the 
-** Throwing exception
-- Makes return value available/simple (no encoding failure)
-- Supports construction.  Note 2-phase construction weakens invariants.
-- Simplifies postcondition
-- Simplifies client logic when the immediate client can't do anything about it
-
-** Returning error
-- good when immediate client has a response
 
 ## Invariants
 
@@ -320,11 +327,15 @@ but its public interface is more like an array of pairs.
 You can probably write this type in any language; I've coded it in
 Swift, Python, TypeScript, and C++.
 
-<!-- show all four implementations -->
-
 There are four basic operations: create an empty instance, get the nth
 pair, get the length, and append a new pair.  The invariant for this
 type is that the private arrays always have the same length.
+
+<!-- show all four implementations -->
+
+Maintaining that invariant is what I need to do in order to 
+Knowing the invariant allows us to implement the length function by
+returning the length of the first array.
 
 <!-- make this example work -->
 
@@ -344,12 +355,16 @@ struct PairArray<First, Second> {
   public subscript(i: Int) -> (First, Second)
 
   /// The length.
-  public var length: Int
+  public func length() -> Int
 
   /// Adds x to the end.
   public mutating func append(_ x: (First, Second))
 }
 ```
+
+<!-- show weakened private invariant -->
+
+<!-- show pimpl/resource -->
 
 <!-- ordering -->
 If you're the type author, the invariant is basically a “contract with
@@ -455,18 +470,33 @@ this ==  NULL doesn't work.
 Checking that pointer is in range doesn't work.
 Checking that your signed ints didn't overflow doesn't work.
 
-## What to do in existing code
+## What to do in existing codebases
 
 Think globally, act locally
 
-** Create an island of correctness
-** Write the thing that was supposed to be there and begin using it
-- Deprecate the old thing - it's going away; don't use it!
-- Attempt to remove it
-** How to write a contract for existing things.
+### New code
+Create an island of correctness.  Brook no nonsense.
+
+### Maintenance
+* Write a contract for existing things.
 - state any preconditions that can be considered satisfied by all clients
 - promise only the postconditions that all clients depend on.
 
+```
+ * The behavior of this class is unknown. Its specification is
+ * whatever the callers have come to rely on in the decade+ it's
+ * existed.
+```
+
+** Write the thing that was supposed to be there and begin using it
+- Attempt to remove the old thing
+- Otherwise, deprecate it
+- It's going away; don't use it!
+
+### Debugging
+
+** The only way to get control of a misbehaving system is to establish
+what the contracts are.  If someone else has to do that, huge cost!
 
 ** Dealing with Hyrum's law
 With a sufficient number of users of an API, it does not matter what
@@ -498,28 +528,5 @@ will be depended on by somebody.
   syndrome—it's OKAY; as a programmer you've earned the
   right.
 
-# -------------------- Stuff to incorporate ------------------------
 
-
-## Deal with failing constructors/exceptions, null.
-## 
-
-
-
-## Debugging:
-** The only way to get control of a misbehaving system is to establish what the contracts are.
-If someone else has to do that, huge cost!
-** Add precondition checks
-- When you can and
-- it's affordable
-
-** Add invariant checks
-where? exit of ctors and mutating methods with access to the private parts
-
-## Misc
-
-
-
-
-** UB
 
