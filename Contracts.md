@@ -335,17 +335,6 @@ propagate nonsense—garbage in, garbage out.
 
 - We don't include error effects in the postcondition.
 
-###### Reporting
-
-- Returning error or optional
-  - good when immediate client has a response
-  - awkward for constructors
-  
-- Throwing exception
-  - Simplifies client logic when the immediate client can't do anything about it
-  - Makes return value available/simple (no encoding failure)
-  - Supports construction failure with strong invariants.
-
 ### Invariants ###
 
 An “invariant” in Hoare Logic is just a thing that has to be true at
@@ -661,6 +650,25 @@ will be depended on by somebody.
   embarrassed to tell anyone—maybe you have a little impostor
   syndrome—it's OKAY; as a programmer you've earned the
   right.
+
+# -------- ADD TO PART 2 ---------
+
+- Example of contracts that benefit from additional English expression
+- Example of uncheckable contracts
+- Don't be afraid of having lots of preconditions. You should only
+  promise results for inputs that make sense. Weak preconditions
+  propagate nonsense—garbage in, garbage out.
+- We don't include error effects in the postcondition. (style)
+
+- Error Reporting
+  - Returning error or optional
+	- good when immediate client has a response
+	- awkward for constructors
+
+  - Throwing exception
+	- Simplifies client logic when the immediate client can't do anything about it
+	- Makes return value available/simple (no encoding failure)
+	- Supports construction failure with strong invariants.
 
 
 # -------- CUT -------
