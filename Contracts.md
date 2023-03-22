@@ -159,7 +159,7 @@ it should help both of them, and I'll show you how to do just that.
 
 <!-- ** Implementation comments indicate a missing refactor -->
 
-### Aside: Language / Library Support
+#### Aside: Language / Library Support ####
 
 You may have heard that some languages have features to support Design
 by Contract.  In general, that means you can write *parts* of your
@@ -352,7 +352,7 @@ So Encode program invariants in a type
 <!-- no mutation, no need to think about it. -->
 
 
-#### Other elements of contracts ####
+### Other elements of contracts ###
 
 <!-- phrasing -->
 - Function Signatures
