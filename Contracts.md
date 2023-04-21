@@ -457,6 +457,61 @@ and the way to mitigate damage (like, the embarrassment of showing up at the fan
 like, clearly the butler shouldn't just walk off into the desert leaving the keys in the car if the right gas isn't available
 
 # ---------- END OF PART 1 ---------
+## Quick Review
+
+In part I we introduced a discipline called Design by Contract: a way
+of documenting code so that you can reason locally its meaning and
+correctness. You do this by completely describing three elements:
+an operation's preconditions (the things a client must ensure),
+postconditions (the effects and result value of the operation), and
+invariants: properties that are preserved.
+
+For example, the operation that removes and returns an element from a
+dynamic array might have this contract.
+
+```swift
+/// A resizable random-access collection of `T`s.
+///
+/// - Invariant: `count >= 0`
+struct DynamicArray<T> {
+  // Private invariant: `capacity >= count`
+  
+  /// Removes and returns the last element.
+  ///
+  /// - Precondition: `self` is non-empty.
+  /// - Postcondition: The length is one less than before the call.
+  /// - Invariant: the values of the remaining elements.
+  public mutating func popLast() -> T { ... }
+
+  /// The `i`th element.
+  ///
+  /// - Precondition: `i >= 0 && i < count`
+  public subscript(i: Int) -> T { ... }
+  
+  /// The length.
+  public var count: Int { ... }
+
+  /// The number of elements that can be stored before storage is
+  /// reallocated.
+  private var capacity: Int { ... }
+}
+```
+
+We also talked about *type invariants*, which describe conditions that
+always hold at the boundary between a type and its clients.  For
+example, this type has a publicly-visible invariant that its length is
+always non-negative.  That's useful information for clients because it tells It also has an invariant that's only visible to
+the implementor, that its capacity is always at least as great as its
+count.  
+
+<description of the example>
+
+Today, we're going to talk about 
+- How errors fit into the picture
+- How to write contracts well 
+- How to reinforce your code and find bugs by _checking_ contracts
+- What to do in existing codebases.
+
 
 ## Invariants and errors
 ## Pimpl and Nondestructive Move
@@ -528,6 +583,9 @@ like, clearly the butler shouldn't just walk off into the desert leaving the key
 
 ## Checking
 <!-- phrasing -->
+
+DbC can also be used to _reinforce_ your code and help you discover
+bugs during testing.
 
 In a project with more than a couple participants, these checks are
 super-valuable.
