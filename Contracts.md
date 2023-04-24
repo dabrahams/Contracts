@@ -500,9 +500,11 @@ struct DynamicArray<T> {
 We also talked about *type invariants*, which describe conditions that
 always hold at the boundary between a type and its clients.  For
 example, this type has a publicly-visible invariant that its length is
-always non-negative.  That's useful information for clients because it tells It also has an invariant that's only visible to
-the implementor, that its capacity is always at least as great as its
-count.  
+always non-negative.  That's useful information for clients because it
+tells them what kinds of things they can do with this value.
+
+It also has an invariant that's only visible to the implementor, that
+its private capacity is always at least as great as its count.
 
 <description of the example>
 
@@ -512,9 +514,11 @@ Today, we're going to talk about
 - How to reinforce your code and find bugs by _checking_ contracts
 - What to do in existing codebases.
 
-
 ## Invariants and errors
 ## Pimpl and Nondestructive Move
+## Good contract style
+<!-- ** Implementation comments indicate a missing refactor -->
+
 ### Other elements of contracts ###
 
 <!-- phrasing -->
@@ -527,9 +531,6 @@ Today, we're going to talk about
     the name, or change it.
   - sort with a random comparison is not a shuffle.  At worst, isolate
     it as a hack in a well-named operation.
-
-## Good contract style
-<!-- ** Implementation comments indicate a missing refactor -->
 
 <!-- phrasing -->
 - Names 
