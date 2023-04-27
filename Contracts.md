@@ -514,8 +514,301 @@ Today, we're going to talk about
 - How to reinforce your code and find bugs by _checking_ contracts
 - What to do in existing codebases.
 
-## Invariants and errors
-## Pimpl and Nondestructive Move
+## Another example
+
+This is a method of Arrays that sorts the elements according to some
+comparison predicate `areInIncreasingOrder`.
+
+```swift
+extension Array {
+  /// Sorts the elements so that `areInIncreasingOrder(self[i+1],
+  /// self[i])` is false for for each `i` where 0 <= `i` < `count` - 1.
+  ///
+  /// - Precondition: `areInIncreasingOrder` is a strict weak ordering
+  ///   over the elements of `self`.
+  /// - Complexity: at most N log N comparisons, where N is the number
+  ///   of elements.
+  mutating func sort<T>(areInIncreasingOrder: (T, T)->Bool) { ... }
+```
+
+The summary gives the postcondition is no two adjacent elements
+are out-of-order according to the predicate.
+
+Two things to notice: first, there's an explicit precondition that
+isn't implied by the summary.  I'm not going to get into detail about
+what it means to be a strict weak ordering here, but for one stark
+example, that means it has to be stable for any pair of argument
+values. If it returns random booleans, we can't claim anything about
+what it will return for adjacent elements after sorting.
+
+Second, I've documented the performance of this method.  Time and
+space complexity have to be part of the contract if you want your
+clients to be able to reason locally about the performance of their
+own code.  You haven't seen complexity documented in this talk up to
+now because I have a policy that if the complexity of an operation is
+constant, it doesn't need to be documented.
+
+I want to mention one other thing: everything you see in these
+function signatures is implicitly part of the function's contract, for
+example, the signature says the predicate must operate on arguments of
+type T, and return a `Bool`, so we didn't have to spell that out as a
+precondition.  Because this is a statically typed language, it just so
+happens that those things are going to be enforced by the compiler,
+but if you're programming in a totally dynamic language, like
+Javascript, or Python without type hints, you're at a disadvantage: if
+you want to practice this discipline you need to make sure that
+information is all implied or explicit.
+
+Okay, now let's see what happens when errors are involved.
+
+## Contracts and errors
+
+In part I we described an error as a no-fault, recoverable
+postcondition failure.
+
+That means neither the client nor the operation have any reasonable
+way to guarantee that the postcondition can be satisfied, but the
+client might have a reasonable way to recover and continue running.
+For example, you can't guarantee you'll be able to deserialize a
+document from disk if the data turns out to be corrupted, but you can
+report the corruption to the user and continue running.
+
+Anyway, because mutations are postconditions, errors have some
+interesting implications for mutation.
+
+Let's update our sorting function to deal with a comparison that can
+report errors.  Maybe the comparison needs to allocate space on disk or something.
+
+```swift
+extension Array {
+  /// Sorts the elements so that `areInIncreasingOrder(self[i+1],
+  /// self[i])` is false for for each `i` where 0 <= `i` < `count` - 1.
+  ///
+  /// - Precondition: `areInIncreasingOrder` is a strict weak ordering
+  ///   over the elements of `self`.
+  /// - Complexity: at most N log N comparisons, where N is the number
+  ///   of elements.
+  mutating func sort<T>(
+    areInIncreasingOrder: (T, T) throws->Bool) rethrows { ... }
+```
+
+In Swift, if something is going to throw, you have to declare that
+fact explicitly, because whether something can report errors is an
+important part of its contract.  We'll get to why that is in a moment,
+but in the meantime, if you're stuck with a language like C++ or
+Python that doesn't make you put error information in the signature,
+you have to find another way to make that available to client coders.
+In those cases I normally have a policy that by default, anything can
+report an error, and say that operations that will never report errors
+must document that fact.
+
+The simplest kind of contract around errors is the one we just
+described: “this operation will not report errors.”  It means the
+postcondition will always be fulfilled as long as the preconditions
+are met. I call that the nothrow guarantee, but if you don't use
+exceptions feel free to call it the “no-error guarantee.”
+
+### Contracts for error-reporting operations
+
+Because we said an error is a recoverable postcondition failure, the
+postcondition doesn't tell you anything about the the state of the
+program when an error is reported.  But if you really don't know
+*anything* about the state of the program, you probably can't recover.
+Fortunately, we can assume by default that the only mutations in case
+of an error are to things that the operation would mutate in case of success.
+
+So in the case of `sort`, we know the array was mutated… somehow, but
+we don't know much more than that.  Is there anything more we can
+reasonably guarantee?
+
+Well, it's _possible_ that our clients could do something with the
+array if they know that the array is still a permutation of the
+original elements, just rearranged.  OK, I just led you down the
+garden path: I actually want to caution you against the line of
+thinking that goes, “it's *conceivable* that some unknown client may
+have a use for this feature or guarantee, so I'm going to give it to
+them.”
+
+1. It's very hard to retract once it's given, because you may break
+   code.
+2. The guarantee complicates your contract: it needs to be described;
+   potential clients need to read and understand it.
+3. The guarantee is likely to complicate your implementation and your
+   tests.
+4. Making needless guarantees may constrain the implementation in ways
+   that rule out the most efficient implementation, now or in the
+   future.
+   
+In general, describing a partially mutated state is complex, probably
+not useful, and may be impossible. So clients need to assume values
+under mutation have arbitrary meaningless values after an error is
+reported.
+
+This is not some new thing. In general, it's a BUG to operate on a
+partially mutated value. In fact, that's usually the problem you
+encounter when there's a data race in your program: a value is
+observed when its invariants are broken.
+
+### Partial Mutations? What About Type Invariants?
+
+I told you that you can lean on invariants for reasoning, so you might
+find the idea of an interrupted, partial mutation alarming, because
+that could leave invariants broken.  That collection of pairs offers a
+good example, if appending an element to a vector can fail, as in C++:
+
+```c++
+class PairVector<X, Y> {
+  vector<X> xs;
+  vector<Y> ys;
+ public:
+  /// Adds `p` to the end.
+  void push_back(std::pair<X, Y> p) {
+    xs.push_back(x.first);
+    ys.push_back(x.second); // <=== here
+  }
+  ...
+}
+```
+
+Now I realize that lots of modern programming languages treat
+out-of-memory as something that can't happen, so if you use one of
+those languages, imagine that the private arrays in this thing are a
+different type, `DiskVector`, that's backed by storage on disk, and we
+can run out of disk space trying to grow them.
+
+So if an error occurs trying to do the second append, as coded, we're
+left with a broken invariant, because the length of `xs` is one
+greater than the length of `ys`.
+
+### The Basic Guarantee
+
+So how could we uphold the invariant? There are a number of strategies.
+Here's one totally legit way.
+
+```c++
+class PairVector<X, Y> {
+  vector<X> xs;
+  vector<Y> ys;
+ public:
+  /// Adds `p` to the end.
+  void push_back(std::pair<X, Y> p) {
+    try {
+	  xs.push_back(x.first);
+	  ys.push_back(x.second);
+	}
+	catch(...) { xs.clear(); ys.clear(); throw; }
+  }
+  ...
+}
+```
+
+If anything fails, we just discard all the elements.  This is
+what we call the Basic Error Guarantee: it says that all invariants
+are upheld and nothing is leaked.
+
+This is a nice place to land because the instance of `PairVector` is
+still in a good state, and its operations still function as normal.
+On the other hand, even if the invariant is upheld, from the client's
+perspective this is still a partially mutated object with unknown
+contents, and we really shouldn't be doing anything with it.  We'll
+come back to that.
+
+### The Nothrow/nofail guarantee
+
+By the way, we need to know something in order for this method to give
+the basic guarantee: it only works if `clear()` can't fail—if it gives
+the nothrow or no-error guarantee.  Remember I said that whether an
+error can occur is part of an operation's contract?  It's crucial
+information because error *recovery* needs to use operations that
+can't themselves report errors.
+
+### The Strong Guarantee
+
+It turns out that `push_back` can give a stronger guarantee than the
+basic one if we recover this way:
+
+```c++
+class PairVector<X, Y> {
+  vector<X> xs;
+  vector<Y> ys;
+ public:
+  /// Adds `p` to the end.
+  ///
+  /// - If an exception is thrown, there are no effects.
+  void push_back(std::pair<X, Y> p) {
+    xs.push_back(x.first);
+    try { ys.push_back(x.second); }
+	catch(...) { xs.pop_back(); throw; }
+  }
+  ...
+}
+```
+
+If the second `push_back` fails, we just undo the first one and the
+`PairVector` is unchanged.  The strong guarantee that an operation
+either succeeds or has no effects is actually useful to clients in
+practice, unlike most statements describing partial mutations.
+
+In fact, we're taking advantage of the strong guarantee from
+`vector`'s own `push_back` method here: it's why no recovery is needed
+if the first `push_back` fails, and we're able to say that the catch
+block restores the state of the `PairVector` because we know that if
+we get there, `ys` is unchanged.
+
+### Which guarantee?
+
+So could that `sort` method give the strong guarantee?  Well, we could
+always do something like this:
+
+```swift
+  mutating func sort<T>(
+    areInIncreasingOrder: (T, T) throws->Bool) rethrows
+  {
+      var tentative = self                             // copy self
+      try tentative.actuallySort(areInIncreasingOrder) // sort the copy
+      swap(&self, &tentative)                          // swap if no fail
+  }
+```
+
+This approach leaves `self` unmodified if `actuallySort` fails.  But
+it's super expensive: it allocates memory, and incurs O(N) space and
+time overhead.  Since we're not sure every client of `sort` needs the
+strong guarantee, we shouldn't force them to accept this expense.  On
+the other hand, the strong guarantee makes sense for `PairVector`'s
+`push_back` because it's achievable without loss of efficiency. It
+even falls out of maintaining invariants in the most natural way.
+
+### The Other Way Around
+
+What you've seen so far is basically the theory of error handling that
+I developed back in 1998 for the C++ standard library, with every
+operation being required to give at least the Basic Guarantee.  It's a
+tried and true way to approach thinking about errors and correctness.
+But I'd be remiss if I didn't describe Sean's 2022 alternative to the
+basic guarantee, which he calls “error handling the other way around.”
+It's based on the insight that an unknown partially-mutated value is
+meaningless, so any operations you do on it, other than destruction
+and maybe assignment, represent a bug—also known as nonsense.
+
+Sean's thesis is that when an operation can't efficiently give the
+strong guarantee, maybe upholding invariants is a waste of effort,
+because further operations on the value are nonsense and there's no
+point in trying to produce a sensible result. It's the client's
+obligation to discard any partially mutated value via destruction or
+assignment, so all we really need to do is leave the partially-mutated
+object in a destructible and assignable state.
+
+If you work on a desktop application with undo, it's effectively
+saving a snapshot of the document before every mutation, so your
+program is very likely set up to discard partial mutations.
+
+In my 1998 theory of error handling, type invariants are required to
+hold after every public operation, whether an error is reported or
+not.  If we do error handling “the other way around,” they're only
+required to hold if the operation is successful or if it gives the
+strong guarantee.  Whichever policy you choose—you got it—document
+that.
+
 ## Good contract style
 <!-- ** Implementation comments indicate a missing refactor -->
 
@@ -583,7 +876,9 @@ Today, we're going to talk about
   consider "Actualize"
 
 ## Checking
-<!-- phrasing -->
+
+- A precondition check is not a crash.  Don't blame the checker.
+- A sanity check is the problem of the asserter.
 
 DbC can also be used to _reinforce_ your code and help you discover
 bugs during testing.
