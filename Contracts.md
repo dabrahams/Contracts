@@ -597,7 +597,7 @@ fact explicitly, because whether something can report errors is an
 important part of its contract.  We'll get to why that is in a moment,
 but in the meantime, if you're stuck with a language like C++ or
 Python that doesn't make you put error information in the signature,
-you have to find another way to make that available to client coders.
+you have to find another way to document it for client coders.
 In those cases I normally have a policy that by default, anything can
 report an error, and say that operations that will never report errors
 must document that fact.
@@ -606,7 +606,7 @@ The simplest kind of contract around errors is the one we just
 described: “this operation will not report errors.”  It means the
 postcondition will always be fulfilled as long as the preconditions
 are met. I call that the nothrow guarantee, but if you don't use
-exceptions feel free to call it the “no-error guarantee.”
+exceptions feel free to call it the “nofail guarantee.”
 
 ### Contracts for error-reporting operations
 
@@ -663,8 +663,8 @@ class PairVector<X, Y> {
  public:
   /// Adds `p` to the end.
   void push_back(std::pair<X, Y> p) {
-    xs.push_back(x.first);
-    ys.push_back(x.second); // <=== here
+    xs.push_back(p.first);
+    ys.push_back(p.second); // <=== here
   }
   ...
 }
@@ -693,8 +693,8 @@ class PairVector<X, Y> {
   /// Adds `p` to the end.
   void push_back(std::pair<X, Y> p) {
     try {
-	  xs.push_back(x.first);
-	  ys.push_back(x.second);
+	  xs.push_back(p.first);
+	  ys.push_back(p.second);
 	}
 	catch(...) { xs.clear(); ys.clear(); throw; }
   }
@@ -717,7 +717,7 @@ come back to that.
 
 By the way, we need to know something in order for this method to give
 the basic guarantee: it only works if `clear()` can't fail—if it gives
-the nothrow or no-error guarantee.  Remember I said that whether an
+the nothrow or nofail guarantee.  Remember I said that whether an
 error can occur is part of an operation's contract?  It's crucial
 information because error *recovery* needs to use operations that
 can't themselves report errors.
@@ -736,8 +736,8 @@ class PairVector<X, Y> {
   ///
   /// - If an exception is thrown, there are no effects.
   void push_back(std::pair<X, Y> p) {
-    xs.push_back(x.first);
-    try { ys.push_back(x.second); }
+    xs.push_back(p.first);
+    try { ys.push_back(p.second); }
 	catch(...) { xs.pop_back(); throw; }
   }
   ...
